@@ -15,6 +15,9 @@ node_modules/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# ---- Vendored type overrides (pinned via package.json instead) ----
+types/
+
 # ---- Claude Code ----
 .claude/settings.local.json
 # LOCK.tmp is the multi-agent file lock convention (see .claude/AGENTS.md)

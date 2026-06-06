@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "model": "claude-sonnet-4-6",
+  "model": "claude-opus-4-8",
   "effortLevel": "high",
   "permissions": {
     "allow": [
@@ -18,6 +18,8 @@
       "Bash(ls *)",
       "Bash(rm -rf .next)",
       "Bash(touch *)",
+      "Bash(git push*)",
+      "Bash(npm install*)",
       "WebFetch(domain:docs.pmnd.rs)",
       "WebFetch(domain:threejs.org)",
       "WebFetch(domain:nextjs.org)",
@@ -25,12 +27,7 @@
       "WebFetch(domain:developers.google.com)"
     ],
     "deny": [
-      "Bash(rm -rf node_modules*)",
-      "Bash(rm -rf .git*)",
-      "Bash(npm install*)",
-      "Bash(npm uninstall*)",
-      "Bash(git push*)",
-      "Bash(git reset --hard*)"
+     
     ]
   },
   "hooks": {

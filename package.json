@@ -23,7 +23,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/three": "^0.184.0",
+    "@types/three": "0.171.0",
     "autoprefixer": "^10.5.0",
     "lightningcss": "^1.32.0",
     "postcss": "^8.5.14",
