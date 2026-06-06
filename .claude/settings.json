@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "claude-sonnet-4-6",
+  "effortLevel": "high",
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck)",
+      "Bash(npm run build)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit*)",
+      "Bash(cat *)",
+      "Bash(sed *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(tail *)",
+      "Bash(head *)",
+      "Bash(python3 *)",
+      "Bash(ls *)",
+      "Bash(rm -rf .next)",
+      "Bash(touch *)",
+      "WebFetch(domain:docs.pmnd.rs)",
+      "WebFetch(domain:threejs.org)",
+      "WebFetch(domain:nextjs.org)",
+      "WebFetch(domain:npmjs.com)",
+      "WebFetch(domain:developers.google.com)"
+    ],
+    "deny": [
+      "Bash(rm -rf node_modules*)",
+      "Bash(rm -rf .git*)",
+      "Bash(npm install*)",
+      "Bash(npm uninstall*)",
+      "Bash(git push*)",
+      "Bash(git reset --hard*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, os\nf = os.environ.get('CLAUDE_TOOL_RESULT_FILE_PATH', '')\nif not f or not f.endswith(('.tsx','.ts')):\n    sys.exit(0)\ndata = open(f,'rb').read()\nbad = [i for i,b in enumerate(data) if b > 127]\nif bad:\n    print(f'WARNING: non-ASCII bytes in {f} at offsets {bad[:5]} -- SWC will break')\n    sys.exit(2)\nnulls = [i for i,b in enumerate(data) if b == 0]\nif nulls:\n    print(f'WARNING: null bytes in {f} -- file corrupted')\n    sys.exit(2)\nlines = len(data.splitlines())\nif lines < 3:\n    print(f'WARNING: {f} has only {lines} lines -- possible truncation')\n    sys.exit(2)\nprint(f'OK: {f} ({lines} lines, no bad bytes)')\n\""
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules", ".next"]
+  }
+}

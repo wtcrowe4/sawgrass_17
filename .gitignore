@@ -1,0 +1,45 @@
+# ---- Next.js ----
+.next/
+out/
+build/
+
+# ---- Dependencies ----
+node_modules/
+
+# ---- Environment / secrets ----
+.env*.local
+# Keep .env.example (no real values, safe to commit)
+!.env.example
+
+# ---- TypeScript ----
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# ---- Claude Code ----
+.claude/settings.local.json
+# LOCK.tmp is the multi-agent file lock convention (see .claude/AGENTS.md)
+LOCK.tmp
+
+# ---- Tool artifacts ----
+.aionrs/
+.playwright-mcp/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Editor ----
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---- Vercel (if deployed later) ----
+.vercel/

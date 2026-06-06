@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette */
+  --color-brand-orange: #fb923c;
+  --color-brand-cyan: #22d3ee;
+  --color-brand-bg: #0a0a0a;
+
+  /* Shot outcome colors */
+  --color-shot-birdie: #10b981;
+  --color-shot-par: #a3a3a3;
+  --color-shot-bogey: #fbbf24;
+  --color-shot-double: #ef4444;
+  --color-shot-water: #3b82f6;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+/* Global reset — canvas takes full viewport, no scroll */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a0a;
+  color: #fafafa;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
