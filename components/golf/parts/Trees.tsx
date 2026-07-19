@@ -51,15 +51,17 @@ export function inLake(wx: number, wz: number): boolean {
 
 // Grandstand keep-outs (world x, z, radius)
 const KEEPOUTS: [number, number, number][] = [
-  [-19.0, 7.0, 6],   // NE shore stand
   [-6.0, 10.0, 6],   // behind-green stand
+  [-11.5, 8.8, 6],   // behind-green stand (relocated from NE shore)
+  [-16.5, 8.0, 6],   // behind-green stand (relocated from east wall N)
   [1.5, 10.8, 5],    // videoboard
   [9.0, -48.5, 8],   // main tee stand
   [-8.2, -45.5, 6],  // tee-right stand
   [-2.4, -50.5, 7],  // behind-tee stand
-  [-21.2, 1.0, 6],   // east stadium wall N segment
-  [-22.8, -9.8, 6],  // east stadium wall S segment
-  [8.9, 9.9, 5],     // back-shore tent row
+  [-22.8, -9.8, 6],  // stand between 17 lake and 16 fairway
+  [7.5, 10.7, 5],    // back-shore tent pair
+  [19.8, 2.0, 4],    // NW shore tent
+  [-21.0, 4.0, 8],   // 16th green complex (green + bunkers + oak)
 ];
 
 interface Band {
@@ -74,8 +76,11 @@ const BANDS: Band[] = [
   { xMin: -32, xMax: 30, zMin: 18, zMax: 34, count: 45, sMin: 0.9, sMax: 1.5 },
   // Near band behind green
   { xMin: -17, xMax: 18, zMin: 6, zMax: 16, count: 28, sMin: 0.7, sMax: 1.2 },
-  // East side beyond the shore (screen right)
-  { xMin: -36, xMax: -20, zMin: -28, zMax: 6, count: 40, sMin: 0.8, sMax: 1.4 },
+  // East side beyond the 16th fairway (screen right) -- fairway corridor
+  // x -24..-30 runs south from 16 green, keep trees east of it
+  { xMin: -36, xMax: -30.5, zMin: -28, zMax: 6, count: 22, sMin: 0.8, sMax: 1.4 },
+  // Scattered pines between 16 fairway and 17's lake
+  { xMin: -23, xMax: -20.5, zMin: -22, zMax: -15, count: 5, sMin: 0.6, sMax: 1.0 },
   // West side beyond cart path + suites (screen left)
   { xMin: 20, xMax: 34, zMin: -34, zMax: -2, count: 25, sMin: 0.8, sMax: 1.3 },
   // South flanks beside the tee complex (kept clear of the camera axis)

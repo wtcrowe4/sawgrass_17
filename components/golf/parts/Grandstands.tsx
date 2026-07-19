@@ -47,12 +47,13 @@ const STANDS: StandCfg[] = [
   { x:  9.0, z: -48.5, len: 11.0, depth: 3.2, scale: 1.4 }, // main -- left of tee (SW), stadium scale
   { x: -2.4, z: -50.5, len: 9.0, depth: 2.8, scale: 1.15 }, // behind pro tee
   { x: -8.2, z: -45.5, len: 5.5, depth: 2.4 },              // right of tee (E)
-  { x: -19.0, z:  7.0, len: 8.0, depth: 2.6 },              // NE shore, between 16 + 17 greens
-  { x: -6.0, z: 10.0, len: 7.0, depth: 2.4 },               // mound behind green, east of videoboard
-  // East-bank stadium wall (getty 2205306924: one long continuous stand) --
-  // two segments following the shoreline, set back so the footprint stays
-  // on land (the bank curves west below z=-5)
-  { x: -21.2, z:  1.0, len: 8.5, depth: 2.8, scale: 1.2 },
+  // Behind-green arc east of the videoboard (getty 2082122646/1248046004);
+  // former NE-shore + east-wall-N stands moved here -- that ground is the
+  // 16th green complex (see Hole16.tsx)
+  { x: -6.0, z: 10.0, len: 7.0, depth: 2.4 },
+  { x: -11.5, z: 8.8, len: 8.0, depth: 2.6, scale: 1.15 },
+  { x: -16.5, z: 8.0, len: 7.0, depth: 2.6 },
+  // Between 17's lake and the 16th fairway, south of 16 green
   { x: -22.8, z: -9.8, len: 8.5, depth: 2.8, scale: 1.2 },
 ];
 
@@ -64,16 +65,50 @@ const TENTS: { x: number; z: number }[] = [
   { x: 16.5, z: -17.0 },
   { x: 16.3, z: -22.0 },
   { x: 14.5, z: -27.0 },
-  { x:  6.2, z: 10.2 },
-  { x:  9.0, z:  9.9 },
-  { x: 11.6, z:  9.4 },
+  { x: 19.8, z:  2.0 },  // NW shore (lake lobe covers x 10..16 up here)
+  { x:  6.2, z: 10.4 },  // west of videoboard
+  { x:  8.7, z: 11.0 },
 ];
 
 function aimRotY(x: number, z: number, aim: { x: number; z: number }): number {
   return Math.atan2(aim.x - x, aim.z - z);
 }
 
+// Seamed tarp texture so big roofs read as segmented canopies instead of
+// flat white slabs (getty 1248046004 drone view shows bay seams + trusses).
+let tarpTexCache: THREE.CanvasTexture | null = null;
+function buildTarpTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  if (tarpTexCache) return tarpTexCache;
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 32;
+  const g = c.getContext("2d");
+  if (!g) return null;
+  g.fillStyle = "#f0eee6";
+  g.fillRect(0, 0, 128, 32);
+  for (let x = 0; x < 128; x += 16) {
+    g.fillStyle = "#d9d6ca";
+    g.fillRect(x, 0, 2, 32);
+    // subtle per-bay shading gradient
+    const grad = g.createLinearGradient(x, 0, x + 16, 0);
+    grad.addColorStop(0, "rgba(180,178,168,0.25)");
+    grad.addColorStop(0.5, "rgba(255,255,255,0)");
+    grad.addColorStop(1, "rgba(180,178,168,0.18)");
+    g.fillStyle = grad;
+    g.fillRect(x, 0, 16, 32);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(5, 1);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tarpTexCache = tex;
+  return tex;
+}
+
 function Stand({ cfg, index }: { cfg: StandCfg; index: number }) {
+  const tarpTex = useMemo(() => buildTarpTexture(), []);
   const s = cfg.scale ?? 1;
   const rotY = aimRotY(cfg.x, cfg.z, GREEN_AIM);
   // Positive angle: deck rises toward the BACK of the stand (real rake)
@@ -131,11 +166,44 @@ function Stand({ cfg, index }: { cfg: StandCfg; index: number }) {
         <boxGeometry args={[0.14, SEAT_RISE * 0.9, cfg.depth * 0.9]} />
         <meshStandardMaterial color={STRUCTURE} roughness={0.85} />
       </mesh>
-      {/* white roof, tilted up toward the back like the deck */}
-      <mesh position={[0, ROOF_H, 0]} rotation={[0.09, 0, 0]} castShadow>
-        <boxGeometry args={[cfg.len + 0.4, 0.1, cfg.depth + 0.5]} />
-        <meshStandardMaterial color={ROOF} roughness={0.55} />
-      </mesh>
+      {/* gabled tarp roof -- two tilted panels meet at a center ridge, navy
+          fascia band on the eaves so the roof doesn't read as a white slab
+          from above (getty 1248046004) */}
+      <group position={[0, ROOF_H, 0]} rotation={[0.06, 0, 0]}>
+        <mesh position={[0, 0.16, -(cfg.depth / 4 + 0.08)]} rotation={[0.42, 0, 0]} castShadow>
+          <boxGeometry args={[cfg.len + 0.4, 0.08, cfg.depth * 0.62]} />
+          <meshStandardMaterial
+            color={tarpTex ? "#ffffff" : ROOF}
+            map={tarpTex ?? undefined}
+            roughness={0.6}
+          />
+        </mesh>
+        <mesh position={[0, 0.16, cfg.depth / 4 + 0.08]} rotation={[-0.42, 0, 0]} castShadow>
+          <boxGeometry args={[cfg.len + 0.4, 0.08, cfg.depth * 0.62]} />
+          <meshStandardMaterial
+            color={tarpTex ? "#ffffff" : ROOF}
+            map={tarpTex ?? undefined}
+            roughness={0.6}
+          />
+        </mesh>
+        {/* navy fascia on all four eaves */}
+        <mesh position={[0, -0.1, cfg.depth / 2 + 0.12]} castShadow>
+          <boxGeometry args={[cfg.len + 0.44, 0.34, 0.07]} />
+          <meshStandardMaterial color={STRUCTURE} roughness={0.8} />
+        </mesh>
+        <mesh position={[0, -0.1, -(cfg.depth / 2 + 0.12)]} castShadow>
+          <boxGeometry args={[cfg.len + 0.44, 0.34, 0.07]} />
+          <meshStandardMaterial color={STRUCTURE} roughness={0.8} />
+        </mesh>
+        <mesh position={[-(cfg.len / 2 + 0.19), -0.1, 0]} castShadow>
+          <boxGeometry args={[0.07, 0.34, cfg.depth + 0.3]} />
+          <meshStandardMaterial color={STRUCTURE} roughness={0.8} />
+        </mesh>
+        <mesh position={[cfg.len / 2 + 0.19, -0.1, 0]} castShadow>
+          <boxGeometry args={[0.07, 0.34, cfg.depth + 0.3]} />
+          <meshStandardMaterial color={STRUCTURE} roughness={0.8} />
+        </mesh>
+      </group>
       {/* corner posts */}
       {posts.map(([px, pz], i) => (
         <mesh key={i} position={[px, ROOF_H / 2, pz]} castShadow>

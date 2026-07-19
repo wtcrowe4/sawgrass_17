@@ -163,7 +163,7 @@ Parent group handles world-Y spin; child mesh does the -PI/2 X flip (keeps rotat
 - Tournament build-out from Getty refs (local-only in `reference-photos/tournament/`):
   navy/white grandstands + east stadium wall, videoboard w/ leaderboard behind green,
   hospitality tents, ~400 instanced spectators (muted palette), tree island lone oak
-  w/ yellow bloom ring
+  w/ yellow bloom ring; 16th green complex + fairway on the far shore (Hole16.tsx)
 - Plank-textured wood bulkhead, pine/oak instanced treeline, golden hour lighting
 - Tracers: real data, arcs fade to faint traces after landing, hover restores
 - Flag always tournament yellow (real 17 flag); PIN_COLORS = HUD swatches only

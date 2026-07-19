@@ -23,6 +23,7 @@ import { GaussianSplat } from "./parts/GaussianSplat";
 import { Grandstands } from "./parts/Grandstands";
 import { StandingCrowds } from "./parts/Crowd";
 import { TracerPlane } from "./parts/TracerPlane";
+import { Hole16 } from "./parts/Hole16";
 
 import type { Shot } from "@/lib/golf/types";
 import type { PinPosition } from "@/lib/golf/geometry";
@@ -145,6 +146,7 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <CartPath />
       <TeeAreas />
       <Pin pin={pin} />
+      <Hole16 />
       <Trees />
       <Grandstands />
       <StandingCrowds />
