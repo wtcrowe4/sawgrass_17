@@ -154,26 +154,27 @@ East-west mirror: scene geometry is E-W mirrored vs real geography (causeway at 
 Texture is U-flipped (`tex.repeat.set(-1,1)`) to match. North-up image maps correctly after plane -PI/2 X rotation.
 Parent group handles world-Y spin; child mesh does the -PI/2 X flip (keeps rotation axis correct).
 
-## Current state (as of 2026-05-09)
+## Current state (as of 2026-07-19)
 
 **Done:**
-- Green shape (18-pt polygon from aerial reference, SplineCurve smoothed)
-- Fringe ring (18-inch outward offset)
-- Causeway (4 yds wide, runs east to bank, appears screen-left)
-- Lake shape (15-pt polygon from reference photos)
-- Terrain (60wu grass plane with lake punched out)
-- Water (MeshReflectorMaterial on lake shape + ripple canvas overlay)
-- Bulkhead (extruded stone wall around green)
-- TeeBox, Pin, Bunkers, Tracers, Background (trees only)
-- Materials pass (warm concrete bulkhead, broadcast greens)
-- Cinematic intro sweep (3s cubic ease-out)
+- All geometry satellite-traced (green, lake, approach, causeway, cart path, tree island)
+- Real 2025 ShotLink data: 431 tee shots + real per-round pins (`data/real-shots-2025.ts`,
+  regenerate: `scripts/fetch-shots.sh R2025011` then `scripts/transform_shots.py`)
+- Tournament build-out from Getty refs (local-only in `reference-photos/tournament/`):
+  navy/white grandstands + east stadium wall, videoboard w/ leaderboard behind green,
+  hospitality tents, ~400 instanced spectators (muted palette), tree island lone oak
+  w/ yellow bloom ring
+- Plank-textured wood bulkhead, pine/oak instanced treeline, golden hour lighting
+- Tracers: real data, arcs fade to faint traces after landing, hover restores
+- Flag always tournament yellow (real 17 flag); PIN_COLORS = HUD swatches only
+- `scripts/snap.sh <out.png> [url] [waitMs]` -- GPU screenshots via Windows Chrome CDP.
+  NEVER launch WSL-side chromium against this scene (SwiftShader pins 8 cores)
 
 **Pending:**
-- Grandstands (removed, need proper placement from reference photos)
-- Tree island east of green (visible in reference photos, completely missing)
-- Tee box x-offset (slightly left-of-center in real life)
-- Green polygon refinement (tongue could be wider)
-- Pin colors per day
+- Terrain elevation (spectator mounds; USGS 3DEP 1m DEM candidate)
+- Gaussian splat capture (pipeline researched; needs source video pick)
+- Stands could be bigger/more continuous vs getty 1248046004
+- Water darker at golden hour; lighting fine-tune
 
 ## Reference photos
 

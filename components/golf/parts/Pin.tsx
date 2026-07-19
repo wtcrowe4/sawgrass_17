@@ -35,7 +35,9 @@ interface PinProps {
 export function Pin({ pin }: PinProps) {
   const flagRef = useRef<THREE.Mesh>(null);
   const pinPos = PIN_POSITIONS[pin];
-  const flagColor = PIN_COLORS[pin];
+  // The real 17 flag is tournament yellow every round (getty 2265188811,
+  // 2082122646). PIN_COLORS stays for the HUD selector swatches only.
+  const flagColor = "#f2c744";
 
   // Gentle flag wave — sine-driven rotation on Y axis
   useFrame(({ clock }) => {
