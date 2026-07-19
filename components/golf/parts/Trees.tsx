@@ -2,16 +2,21 @@
 
 import { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
+import { getLakeOutlinePoints } from "@/lib/golf/geometry";
 
-// Trees -- InstancedMesh of cypress cones forming a treeline around
-// the hole perimeter (back and east of green, around tree island).
-// Avoids west side where cart path + tee complex live.
+// Trees -- InstancedMesh pine/cypress treeline ringing the hole, matching the
+// dense Florida pine wall in reference photos image1/image2/image7.
+//
+// Rewritten 2026-07-11 for the post-satellite-trace coordinate system
+// (world +x = west/causeway side, -x = east, +z = north behind green,
+// tee at z ~ -46). Placement uses explicit world-space rectangles with
+// rejection sampling: no tree may land in the lake polygon (which also
+// covers the island green) or within a grandstand keep-out circle.
 
-const TREE_COUNT     = 180;
 const TRUNK_COLOR    = "#2a1f15";
-const CYPRESS_DARK   = "#0e2014";   // far / shadow
-const CYPRESS_MID    = "#1a3a22";
-const CYPRESS_LIGHT  = "#2c5235";   // sunlit highlights
+const CYPRESS_DARK   = "#1e3d26";   // far / shadow
+const CYPRESS_MID    = "#2c5433";
+const CYPRESS_LIGHT  = "#40704a";   // sunlit highlights
 
 // Seeded RNG -- mulberry32, deterministic placement
 function mulberry32(seed: number) {
@@ -25,26 +30,53 @@ function mulberry32(seed: number) {
   };
 }
 
-interface PlaceCfg {
-  // Annular bands in world coords: trees only where r in [rMin, rMax]
-  rMin: number;
-  rMax: number;
-  // Angle range in radians (atan2(z, x), 0..2pi)
-  aMin: number;
-  aMax: number;
-  count: number;
+// Lake outline in shape space: shape.x = world.x, shape.y = -world.z
+const LAKE_PTS = getLakeOutlinePoints();
+
+export function inLake(wx: number, wz: number): boolean {
+  const x = wx;
+  const y = -wz;
+  let inside = false;
+  for (let i = 0, j = LAKE_PTS.length - 1; i < LAKE_PTS.length; j = i++) {
+    const xi = LAKE_PTS[i].x;
+    const yi = LAKE_PTS[i].y;
+    const xj = LAKE_PTS[j].x;
+    const yj = LAKE_PTS[j].y;
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
-// Three placement bands: behind green, east of lake, around tree island
-const BANDS: PlaceCfg[] = [
-  // Behind green (north, +z negative), east half
-  { rMin: 18, rMax: 38, aMin: -Math.PI * 0.95, aMax: -Math.PI * 0.55, count: 70 },
-  // East of lake / past tree island
-  { rMin: 16, rMax: 36, aMin: -Math.PI * 0.55, aMax: -Math.PI * 0.05, count: 60 },
-  // South-east arc behind tracers landing zone
-  { rMin: 22, rMax: 40, aMin: -Math.PI * 0.05, aMax:  Math.PI * 0.30, count: 30 },
-  // Far back (deep north)
-  { rMin: 38, rMax: 55, aMin: -Math.PI * 0.85, aMax: -Math.PI * 0.20, count: 20 },
+// Grandstand keep-outs (world x, z, radius)
+const KEEPOUTS: [number, number, number][] = [
+  [-19.0, 7.0, 6],   // NE shore stand
+  [-3.5, 10.5, 6],   // behind-green stand
+  [9.0, -48.5, 7],   // main tee stand
+  [-8.2, -45.5, 6],  // tee-right stand
+  [-2.4, -50.5, 6],  // behind-tee stand
+];
+
+interface Band {
+  xMin: number; xMax: number;
+  zMin: number; zMax: number;
+  count: number;
+  sMin: number; sMax: number;
+}
+
+const BANDS: Band[] = [
+  // Deep backdrop north of green -- tall pine wall
+  { xMin: -32, xMax: 30, zMin: 18, zMax: 34, count: 45, sMin: 0.9, sMax: 1.5 },
+  // Near band behind green
+  { xMin: -17, xMax: 18, zMin: 6, zMax: 16, count: 28, sMin: 0.7, sMax: 1.2 },
+  // East side beyond the shore (screen right)
+  { xMin: -36, xMax: -20, zMin: -28, zMax: 6, count: 40, sMin: 0.8, sMax: 1.4 },
+  // West side beyond cart path + suites (screen left)
+  { xMin: 20, xMax: 34, zMin: -34, zMax: -2, count: 25, sMin: 0.8, sMax: 1.3 },
+  // South flanks beside the tee complex (kept clear of the camera axis)
+  { xMin: -24, xMax: -14, zMin: -52, zMax: -44, count: 8, sMin: 0.55, sMax: 0.85 },
+  { xMin: 15, xMax: 26, zMin: -52, zMax: -44, count: 8, sMin: 0.55, sMax: 0.85 },
 ];
 
 interface TreeInstance {
@@ -55,20 +87,35 @@ interface TreeInstance {
   shade: number; // 0..1 for color lerp
 }
 
+function isBlocked(x: number, z: number): boolean {
+  if (inLake(x, z)) return true;
+  for (const [kx, kz, kr] of KEEPOUTS) {
+    const dx = x - kx;
+    const dz = z - kz;
+    if (dx * dx + dz * dz < kr * kr) return true;
+  }
+  return false;
+}
+
 function buildInstances(): TreeInstance[] {
   const rng = mulberry32(0xCAFEBABE);
   const out: TreeInstance[] = [];
   BANDS.forEach((band) => {
-    for (let i = 0; i < band.count; i++) {
-      const r = band.rMin + rng() * (band.rMax - band.rMin);
-      const a = band.aMin + rng() * (band.aMax - band.aMin);
-      const x = r * Math.cos(a);
-      const z = r * Math.sin(a);
-      // Scale variation 0.7..1.5
-      const scale = 0.7 + rng() * 0.8;
-      const rotY = rng() * Math.PI * 2;
-      const shade = rng();
-      out.push({ x, z, scale, rotY, shade });
+    let placed = 0;
+    let attempts = 0;
+    while (placed < band.count && attempts < band.count * 12) {
+      attempts++;
+      const x = band.xMin + rng() * (band.xMax - band.xMin);
+      const z = band.zMin + rng() * (band.zMax - band.zMin);
+      if (isBlocked(x, z)) continue;
+      out.push({
+        x,
+        z,
+        scale: band.sMin + rng() * (band.sMax - band.sMin),
+        rotY: rng() * Math.PI * 2,
+        shade: rng(),
+      });
+      placed++;
     }
   });
   return out;
@@ -145,7 +192,8 @@ export function Trees() {
         castShadow={false}
         receiveShadow={false}
       >
-        <meshStandardMaterial color={CYPRESS_MID} roughness={1.0} metalness={0.0} vertexColors={false} />
+        {/* base color white -- per-instance colors multiply against it */}
+        <meshStandardMaterial color="#ffffff" roughness={1.0} metalness={0.0} vertexColors={false} />
       </instancedMesh>
     </group>
   );

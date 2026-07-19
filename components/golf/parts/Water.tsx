@@ -151,14 +151,14 @@ export function Water() {
       {/* Reflective lake surface */}
       <mesh geometry={lakeGeo} position={[0, WATER_Y, 0]} receiveShadow>
         <MeshReflectorMaterial
-          blur={[300, 80]}
+          blur={[400, 120]}
           resolution={512}
           mixBlur={1.0}
-          mixStrength={1.4}
-          mixContrast={1.15}
-          mirror={0.55}
-          color="#0b2e3d"
-          roughness={0.12}
+          mixStrength={1.2}
+          mixContrast={1.0}
+          mirror={0.42}
+          color="#123f54"
+          roughness={0.2}
           metalness={0.0}
         />
       </mesh>
@@ -167,13 +167,13 @@ export function Water() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y + 0.001, 0]}>
         <planeGeometry args={[60, 60]} />
         <meshStandardMaterial
-          color="#0d3549"
+          color="#124256"
           transparent
           opacity={0.28}
-          roughness={0.08}
-          metalness={0.12}
+          roughness={0.5}
+          metalness={0.02}
           normalMap={rippleTexRef.current ?? undefined}
-          normalScale={new THREE.Vector2(0.08, 0.08)}
+          normalScale={new THREE.Vector2(0.15, 0.15)}
         />
       </mesh>
 
@@ -183,7 +183,7 @@ export function Water() {
           ref={causticMatRef}
           map={causticTexRef.current ?? undefined}
           transparent
-          opacity={0.18}
+          opacity={0.12}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />

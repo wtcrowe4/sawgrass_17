@@ -16,7 +16,9 @@ tsconfig.tsbuildinfo
 *.tsbuildinfo
 
 # ---- Vendored type overrides (pinned via package.json instead) ----
-types/
+# types/* (not types/) so the negation below can re-include tracked files
+types/*
+!types/gaussian-splats-3d.d.ts
 
 # ---- Claude Code ----
 .claude/settings.local.json
@@ -26,6 +28,10 @@ LOCK.tmp
 # ---- Tool artifacts ----
 .aionrs/
 .playwright-mcp/
+.memsearch/
+
+# ---- Licensed reference imagery (Getty previews) -- keep out of the repo ----
+reference-photos/tournament/
 
 # ---- OS ----
 .DS_Store

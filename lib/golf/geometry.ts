@@ -248,7 +248,7 @@ export function makeCausewayShape(): THREE.Shape {
 export function parabolaPoints(
   tee: { x: number; y: number },
   landing: { x: number; y: number },
-  apexFactor = 0.35,
+  apexFactor = 0.2,
   segments = 48
 ): THREE.Vector3[] {
   const tx = toSceneX(tee.x * Y2W);
@@ -259,12 +259,17 @@ export function parabolaPoints(
   const dist = Math.sqrt((lx - tx) ** 2 + (lz - tz) ** 2);
   const apexH = dist * apexFactor;
 
+  // Launch from tee-pad height, terminate at green-surface height so the
+  // arc tip lands ON the putting surface instead of inside the bulkhead.
+  const teeY = 0.03;
+  const landY = 0.06;
+
   const pts: THREE.Vector3[] = [];
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
     const x = tx + (lx - tx) * t;
     const z = tz + (lz - tz) * t;
-    const y = 4 * apexH * t * (1 - t);
+    const y = teeY + (landY - teeY) * t + 4 * apexH * t * (1 - t);
     pts.push(new THREE.Vector3(x, y, z));
   }
   return pts;
@@ -279,16 +284,18 @@ export function parabolaPoints(
 export type PinPosition = "sunday" | "thursday" | "friday" | "saturday";
 
 export const PIN_POSITIONS: Record<PinPosition, { x: number; z: number }> = {
-  // All 4 verified inside GREEN_SURFACE_POLY_YDS (2026-05-13).
-  sunday:   { x: toSceneX(-7  * Y2W), z: -11 * Y2W },  // front-right tongue   world (2.1, 0, -3.3)
-  thursday: { x: toSceneX(-12 * Y2W), z: -28 * Y2W },  // back-center          world (3.6, 0, -8.4)
-  friday:   { x: toSceneX(-15 * Y2W), z: -20 * Y2W },  // center middle        world (4.5, 0, -6.0)
-  saturday: { x: toSceneX(-22 * Y2W), z: -28 * Y2W },  // back-left peninsula  world (6.6, 0, -8.4)
+  // REAL 2025 THE PLAYERS pin locations, from pgatour.com
+  // tourcast pinCoords transformed via scripts/transform_shots.py.
+  // All 4 verified inside GREEN_SURFACE_POLY_YDS.
+  thursday: { x: toSceneX(-18.35 * Y2W), z: -9.36  * Y2W },  // R1 back-left
+  friday:   { x: toSceneX(-22.28 * Y2W), z: -24.66 * Y2W },  // R2 front-left
+  saturday: { x: toSceneX(-13.62 * Y2W), z: -8.25  * Y2W },  // R3 back-center
+  sunday:   { x: toSceneX(-4.94  * Y2W), z: -16.28 * Y2W },  // R4 right edge
 };
 
-// Terrain -- 60wu square with lake punched out.
+// Terrain -- 100wu square with lake punched out (edge stays past the fog line).
 export function makeTerrainShape(): THREE.Shape {
-  const outer = 60;
+  const outer = 100;
   const terrain = new THREE.Shape([
     new THREE.Vector2(-outer, -outer),
     new THREE.Vector2(outer, -outer),

@@ -14,8 +14,8 @@ import { makeTerrainShape } from "@/lib/golf/geometry";
 // Color: dark rough/rough-cut grass matching TPC Sawgrass surroundings.
 
 const TERRAIN_Y    = 0.01;
-const ROUGH_COLOR  = "#1a3520";  // dark rough surrounding the lake
-const ROUGH_COLOR2 = "#1e3d26";  // slightly lighter -- fairway areas
+const ROUGH_COLOR  = "#2c5c31";  // Bermuda rough in Florida sun
+const ROUGH_COLOR2 = "#336838";  // slightly lighter -- fairway areas
 
 export function Terrain() {
   const roughGeo = useMemo(() => {

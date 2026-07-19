@@ -17,10 +17,47 @@ import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape } from "@/
 const BULKHEAD_HEIGHT = 0.5;
 const BULKHEAD_SCALE  = 1.04;
 const LAKE_WALL_WIDTH = 0.35;  // wu -- thin sliver at shore edge
-const STONE_COLOR     = "#7a7060";
-const STONE_DARK      = "#5c5448";
+// Weathered timber -- the real island is edged with dark wooden plank walls
+const TIMBER_COLOR    = "#6a5340";
+const TIMBER_DARK     = "#4a3a2c";
+
+// Vertical plank texture: plank-width hue jitter + dark seam lines.
+// ExtrudeGeometry side faces map u along the contour, so RepeatWrapping
+// with a high repeat.x wraps planks around the wall perimeter.
+function buildPlankTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const w = 128;
+  const h = 64;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  const plankW = 8;
+  for (let x = 0; x < w; x += plankW) {
+    const jitter = (Math.sin(x * 12.9898) * 43758.5453) % 1; // deterministic
+    const v = Math.abs(jitter) * 30 - 15;
+    ctx.fillStyle = `rgb(${106 + v}, ${83 + v * 0.8}, ${64 + v * 0.6})`;
+    ctx.fillRect(x, 0, plankW, h);
+    ctx.fillStyle = "rgba(30, 22, 16, 0.85)";
+    ctx.fillRect(x, 0, 1, h);
+  }
+  // Horizontal waterline stain across the lower third
+  const grad = ctx.createLinearGradient(0, h * 0.6, 0, h);
+  grad.addColorStop(0, "rgba(25, 20, 15, 0)");
+  grad.addColorStop(1, "rgba(25, 20, 15, 0.55)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, h * 0.6, w, h * 0.4);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(30, 1);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
 export function Bulkhead() {
+  const plankTex = useMemo(() => buildPlankTexture(), []);
   const { outerGeo, innerGeo, lakeGeo, approachGeo } = useMemo(() => {
     const extSettings: THREE.ExtrudeGeometryOptions = {
       depth: BULKHEAD_HEIGHT,
@@ -75,16 +112,34 @@ export function Bulkhead() {
   return (
     <group name="bulkhead">
       <mesh geometry={outerGeo} castShadow receiveShadow>
-        <meshStandardMaterial color={STONE_COLOR} roughness={0.94} metalness={0.02} side={THREE.FrontSide} />
+        <meshStandardMaterial
+          color={plankTex ? "#ffffff" : TIMBER_COLOR}
+          map={plankTex ?? undefined}
+          roughness={0.94}
+          metalness={0.02}
+          side={THREE.FrontSide}
+        />
       </mesh>
       <mesh geometry={innerGeo} castShadow receiveShadow>
-        <meshStandardMaterial color={STONE_DARK} roughness={0.97} metalness={0.01} side={THREE.BackSide} />
+        <meshStandardMaterial color={TIMBER_DARK} roughness={0.97} metalness={0.01} side={THREE.BackSide} />
       </mesh>
       <mesh geometry={lakeGeo} castShadow receiveShadow>
-        <meshStandardMaterial color={STONE_COLOR} roughness={0.94} metalness={0.02} side={THREE.DoubleSide} />
+        <meshStandardMaterial
+          color={plankTex ? "#ffffff" : TIMBER_COLOR}
+          map={plankTex ?? undefined}
+          roughness={0.94}
+          metalness={0.02}
+          side={THREE.DoubleSide}
+        />
       </mesh>
       <mesh geometry={approachGeo} castShadow receiveShadow>
-        <meshStandardMaterial color={STONE_COLOR} roughness={0.94} metalness={0.02} side={THREE.DoubleSide} />
+        <meshStandardMaterial
+          color={plankTex ? "#ffffff" : TIMBER_COLOR}
+          map={plankTex ?? undefined}
+          roughness={0.94}
+          metalness={0.02}
+          side={THREE.DoubleSide}
+        />
       </mesh>
     </group>
   );

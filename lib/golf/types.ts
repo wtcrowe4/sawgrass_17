@@ -16,7 +16,8 @@ export interface Shot {
   tee: { x: number; y: number };
   outcome: ShotOutcome;
   carryYds: number;
-  club: string;
+  /** Club used -- unknown for ShotLink-derived data (API has no club field) */
+  club?: string;
 }
 
 // ─── Full hole dataset ────────────────────────────────────────────────────────

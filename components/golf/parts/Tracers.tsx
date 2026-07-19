@@ -39,7 +39,7 @@ function ShotTooltip({ shot, visible }: { shot: Shot; visible: boolean }) {
           {shot.outcome.toUpperCase()} &middot; {shot.carryYds} yds
         </div>
         <div style={{ opacity: 0.8 }}>{shot.player} ({shot.year})</div>
-        <div style={{ opacity: 0.6 }}>{shot.club}</div>
+        {shot.club && <div style={{ opacity: 0.6 }}>{shot.club}</div>}
       </div>
     </Html>
   );
@@ -50,18 +50,20 @@ interface TracerProps {
   shot: Shot;
   index: number;
   globalTime: number;
+  stagger: number;
+  dotR: number;
   onHover?: (shot: Shot | null) => void;
 }
 
-function SingleTracer({ shot, index, globalTime, onHover }: TracerProps) {
+function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: TracerProps) {
   const ballRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
   const color     = OUTCOME_COLOR[shot.outcome];
-  const startTime = index * STAGGER_S;
+  const startTime = index * stagger;
 
   const arcPoints = useMemo(
-    () => parabolaPoints(shot.tee, shot.landing, 0.35, ARC_SEGMENTS),
+    () => parabolaPoints(shot.tee, shot.landing, 0.2, ARC_SEGMENTS),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shot.id]
   );
@@ -141,7 +143,7 @@ function SingleTracer({ shot, index, globalTime, onHover }: TracerProps) {
 
       {done && (
         <mesh position={landingW} onPointerOver={handleOver} onPointerOut={handleOut} castShadow>
-          <sphereGeometry args={[DOT_R, 10, 10]} />
+          <sphereGeometry args={[dotR, 10, 10]} />
           <meshStandardMaterial
             color={color}
             roughness={0.4}
@@ -171,6 +173,11 @@ export function Tracers({ shots, onHoverShot }: TracersProps) {
     setGlobalTime(timeRef.current);
   });
 
+  // Real datasets are 70-140 shots per round -- compress the launch window
+  // to ~6s total and shrink dots so the green stays readable.
+  const stagger = shots.length > 30 ? 6 / shots.length : STAGGER_S;
+  const dotR = shots.length > 30 ? 0.08 : DOT_R;
+
   return (
     <group name="tracers">
       {shots.map((shot, i) => (
@@ -179,6 +186,8 @@ export function Tracers({ shots, onHoverShot }: TracersProps) {
           shot={shot}
           index={i}
           globalTime={globalTime}
+          stagger={stagger}
+          dotR={dotR}
           onHover={onHoverShot}
         />
       ))}

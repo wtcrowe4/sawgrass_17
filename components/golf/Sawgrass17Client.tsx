@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { Sawgrass17 } from "./Sawgrass17";
-import { SAMPLE_SHOTS } from "@/data/sample-shots";
+import { REAL_SHOTS_2025 } from "@/data/real-shots-2025";
 import type { Shot } from "@/lib/golf/types";
 import type { PinPosition } from "@/lib/golf/geometry";
 import { OUTCOME_COLOR } from "@/lib/golf/types";
+import { PIN_COLORS } from "./parts/Pin";
 
 const PIN_OPTIONS: PinPosition[] = ["sunday", "thursday", "friday", "saturday"];
 const Y2W = 0.3;
@@ -53,7 +54,7 @@ export function Sawgrass17Client() {
     setPoints((prev) => [...prev, [x, z]]);
   }, []);
 
-  const visibleShots = SAMPLE_SHOTS.filter((s) => s.pin === pin);
+  const visibleShots = REAL_SHOTS_2025.filter((s) => s.pin === pin);
 
   const polyLines = points
     .map(([x, z]) => traceTarget === "lake" ? toLakePoly(x, z) : toGreenPoly(x, z))
@@ -169,8 +170,17 @@ export function Sawgrass17Client() {
               fontFamily: "ui-sans-serif, system-ui, sans-serif", fontSize: 11,
               fontWeight: pin === p ? 700 : 400, letterSpacing: "0.06em",
               padding: "5px 10px", cursor: "pointer", textTransform: "uppercase",
+              display: "inline-flex", alignItems: "center", gap: 5,
             }}
-          >{p}</button>
+          >
+            {/* flag color swatch -- matches Pin.tsx PIN_COLORS */}
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: PIN_COLORS[p], flexShrink: 0,
+              border: "1px solid rgba(0,0,0,0.4)",
+            }} />
+            {p}
+          </button>
         ))}
       </div>
 
@@ -274,7 +284,9 @@ export function Sawgrass17Client() {
             {hoveredShot.outcome.toUpperCase()}
           </div>
           <div style={{ opacity: 0.7, marginTop: 2 }}>{hoveredShot.player} &middot; {hoveredShot.year}</div>
-          <div style={{ opacity: 0.6, marginTop: 1 }}>{hoveredShot.carryYds} yds &middot; {hoveredShot.club}</div>
+          <div style={{ opacity: 0.6, marginTop: 1 }}>
+            {hoveredShot.carryYds} yds{hoveredShot.club ? <> &middot; {hoveredShot.club}</> : null}
+          </div>
         </div>
       )}
     </div>

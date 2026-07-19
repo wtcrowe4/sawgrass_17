@@ -13,7 +13,7 @@ import { makeGreenShape, makeGreenSurfaceShape } from "@/lib/golf/geometry";
 
 const GREEN_Y       = 0.05;
 const LANDMASS_COLOR = "#2a5c38";  // darker collar/rough green
-const SURFACE_COLOR  = "#5fa860";  // brightest -- shortest grass on the hole
+const SURFACE_COLOR  = "#54a058";  // brightest -- shortest grass on the hole
 
 export function Green() {
   const { landmassGeo, surfaceGeo } = useMemo(() => {

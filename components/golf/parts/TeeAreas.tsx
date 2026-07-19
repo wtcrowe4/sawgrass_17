@@ -14,7 +14,7 @@ import { Y2W } from "@/lib/golf/types";
 // per user direction 2026-05-13.
 
 const TEE_GRASS_Y     = 0.025;
-const TEE_GRASS_COLOR = "#347856";  // darker than putting surface (#5fa860)
+const TEE_GRASS_COLOR = "#3f7d44";  // mown tee grass -- lighter than rough, less teal
 
 const MARKER_R       = 0.13;
 const MARKER_SPACING = 0.55;

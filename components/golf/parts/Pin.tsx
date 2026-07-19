@@ -15,7 +15,7 @@ import { PIN_POSITIONS, type PinPosition } from "@/lib/golf/geometry";
 //   friday → #facc15 (yellow)
 //   saturday → #60a5fa (blue)
 
-const PIN_COLORS: Record<PinPosition, string> = {
+export const PIN_COLORS: Record<PinPosition, string> = {
   sunday: "#fb923c",   // orange — brand color
   thursday: "#ffffff", // white
   friday: "#facc15",   // yellow

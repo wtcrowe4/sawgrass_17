@@ -13,7 +13,7 @@ import { TeeAreas } from "./parts/TeeAreas";
 import { CartPath } from "./parts/CartPath";
 import { DistanceMarkers } from "./parts/DistanceMarkers";
 import { Pin } from "./parts/Pin";
-import { Background } from "./parts/Background";
+import { Trees } from "./parts/Trees";
 import { Tracers } from "./parts/Tracers";
 import { SatelliteOverlay } from "./parts/SatelliteOverlay";
 import { TreeIsland } from "./parts/TreeIsland";
@@ -21,6 +21,8 @@ import { Shoreline } from "./parts/Shoreline";
 import { GrassApproach } from "./parts/GrassApproach";
 import { IslandBunker } from "./parts/IslandBunker";
 import { GaussianSplat } from "./parts/GaussianSplat";
+import { Grandstands } from "./parts/Grandstands";
+import { StandingCrowds } from "./parts/Crowd";
 import { TracerPlane } from "./parts/TracerPlane";
 
 import type { Shot } from "@/lib/golf/types";
@@ -41,12 +43,16 @@ export interface Sawgrass17Props {
 }
 
 // --- Camera config ------------------------------------------------------------
-const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 22, -38);
-const DEFAULT_TARGET = new THREE.Vector3(0, 0, -5);
+// Broadcast tower cam: behind + above the pro tee (world z ~ -46), on the
+// tee->green axis. Target sits mid-lake so the tee pads land at the bottom
+// of the frame (bottom frustum edge hits ground ~z=-46) and the green sits
+// upper-center. Full tee->green tracer story is visible.
+const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 20, -64);
+const DEFAULT_TARGET = new THREE.Vector3(3.5, 0, -24);
 const FOV = 42;
 
 const INTRO_DURATION = 3.0;
-const INTRO_START_POS = new THREE.Vector3(18, 8, -25);
+const INTRO_START_POS = new THREE.Vector3(20, 9, -28);
 
 function useCinematicIntro(enabled: boolean) {
   const { camera } = useThree();
@@ -71,11 +77,11 @@ function useCinematicIntro(enabled: boolean) {
 function Lighting() {
   return (
     <>
-      <ambientLight intensity={0.18} color="#ffffff" />
+      <ambientLight intensity={0.4} color="#ffffff" />
       <directionalLight
         position={[18, 30, 10]}
-        intensity={1.8}
-        color="#ffe8c0"
+        intensity={2.0}
+        color="#fff3dd"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -111,7 +117,9 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
 
   return (
     <>
-      <fog attach="fog" args={["#a8c0d8", 110, 320]} />
+      {/* Daylight sky -- bright Florida blue, fog fades terrain into it */}
+      <color attach="background" args={["#9cc4e0"]} />
+      <fog attach="fog" args={["#a8c8de", 110, 320]} />
       <Lighting />
       {/* HDR environment -- sky, ambient bounce, reflections on water */}
       <Environment preset="park" background={false} environmentIntensity={0.85} />
@@ -137,7 +145,9 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <DistanceMarkers />
       <TeeAreas />
       <Pin pin={pin} />
-      <Background />
+      <Trees />
+      <Grandstands />
+      <StandingCrowds />
       {showSplat && splatUrl && (
         <GaussianSplat
           url={splatUrl}
