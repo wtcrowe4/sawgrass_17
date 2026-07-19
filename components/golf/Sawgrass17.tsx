@@ -123,8 +123,10 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <color attach="background" args={["#e0a878"]} />
       <fog attach="fog" args={["#dba57e", 110, 320]} />
       <Lighting />
-      {/* HDR environment -- sunset sky drives warm water reflections */}
-      <Environment preset="sunset" background={false} environmentIntensity={0.65} />
+      {/* HDR environment -- sunset sky drives warm water reflections.
+          Vendored locally: preset="sunset" fetches from a CDN at runtime
+          and intermittently fails (and would break offline/deploy). */}
+      <Environment files="/hdr/venice_sunset_1k.hdr" background={false} environmentIntensity={0.65} />
       {/* Contact shadow patch under green for ground grounding */}
       <ContactShadows
         position={[2, 0.07, -5]}

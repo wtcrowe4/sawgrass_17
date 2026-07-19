@@ -61,7 +61,8 @@ const KEEPOUTS: [number, number, number][] = [
   [-22.8, -9.8, 6],  // stand between 17 lake and 16 fairway
   [7.5, 10.7, 5],    // back-shore tent pair
   [19.8, 2.0, 4],    // NW shore tent
-  [-21.0, 4.0, 8],   // 16th green complex (green + bunkers + oak)
+  [-28.2, -27.2, 8], // 16th green complex (green + bunkers + oak, south end)
+  [-23.0, 4.0, 5],   // 16th fairway start (north end)
 ];
 
 interface Band {

@@ -12,7 +12,9 @@ import * as THREE from "three";
 // World coords. Shape convention: shape.x = world.x, shape.y = -world.z,
 // then geometry.rotateX(-PI/2).
 
-const GREEN_C   = { x: -21.5, z: 4.2 };
+// Green sits at the SOUTH end of the fairway (near the 17 tee complex --
+// players walk 16 green -> 17 tee); fairway approaches from the north.
+const GREEN_C   = { x: -28.2, z: -27.2 };
 const FWY_COLOR    = "#3e7a43";
 const FRINGE_COLOR = "#3f7d44";
 const GREEN_COLOR  = "#5aa35c";
@@ -34,10 +36,11 @@ function blobShape(cx: number, cz: number, rx: number, rz: number, wobble: numbe
   return shape;
 }
 
-// Fairway outline, world (x, z) -- neck at the green, sweeping south
+// Fairway outline, world (x, z) -- starts wide in the north, necks down to
+// the green at the south end
 const FWY_PTS: [number, number][] = [
-  [-22.2, 5.6], [-23.3, 2.5], [-24.0, -4.0], [-24.6, -12.0], [-25.5, -20.0],
-  [-26.5, -26.0], [-30.5, -26.0], [-30.0, -17.0], [-29.4, -7.0], [-28.8, 1.0],
+  [-22.2, 5.6], [-23.3, 2.5], [-24.0, -4.0], [-24.6, -12.0], [-25.3, -19.0],
+  [-26.2, -24.5], [-30.2, -25.0], [-30.0, -17.0], [-29.4, -7.0], [-28.8, 1.0],
   [-26.8, 5.2], [-24.2, 6.6],
 ];
 
@@ -62,8 +65,8 @@ export function Hole16() {
     fairway: flatGeo(fairwayShape()),
     fringe:  flatGeo(blobShape(GREEN_C.x, GREEN_C.z, 3.9, 3.2, 0.1, 3)),
     green:   flatGeo(blobShape(GREEN_C.x, GREEN_C.z, 3.2, 2.6, 0.12, 3)),
-    bunkerE: flatGeo(blobShape(-19.0, 1.8, 1.5, 1.0, 0.18, 5)),
-    bunkerW: flatGeo(blobShape(-24.3, 1.5, 1.1, 0.9, 0.18, 8)),
+    bunkerE: flatGeo(blobShape(-24.6, -25.0, 1.5, 1.0, 0.18, 5)),
+    bunkerW: flatGeo(blobShape(-31.5, -27.5, 1.1, 0.9, 0.18, 8)),
   }), []);
 
   const oakTrunk  = useMemo(() => new THREE.CylinderGeometry(0.12, 0.2, 2.2, 7), []);
@@ -98,7 +101,7 @@ export function Hole16() {
         </mesh>
       </group>
       {/* lone oak beside the green (getty 2113291111) */}
-      <group position={[-24.5, 0, 6.0]}>
+      <group position={[-31.0, 0, -23.5]}>
         <mesh geometry={oakTrunk} position={[0, 1.1, 0]} castShadow>
           <meshStandardMaterial color="#4a3a28" roughness={0.95} metalness={0} />
         </mesh>
