@@ -73,26 +73,28 @@ function useCinematicIntro(enabled: boolean) {
 }
 
 // --- Lighting -----------------------------------------------------------------
+// Golden hour -- low warm sun from the west (+x, screen-left), long shadows,
+// cool blue counter-fill from the east so shadow sides don't go black.
 function Lighting() {
   return (
     <>
-      <ambientLight intensity={0.4} color="#ffffff" />
+      <ambientLight intensity={0.5} color="#ffe2c4" />
       <directionalLight
-        position={[18, 30, 10]}
-        intensity={2.0}
-        color="#fff3dd"
+        position={[45, 10, -14]}
+        intensity={3.4}
+        color="#ffb36b"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-far={120}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-camera-far={160}
+        shadow-camera-left={-40}
+        shadow-camera-right={40}
+        shadow-camera-top={40}
+        shadow-camera-bottom={-40}
         shadow-bias={-0.0005}
       />
-      <directionalLight position={[-20, 15, -50]} intensity={0.32} color="#22d3ee" castShadow={false} />
-      <directionalLight position={[0, 10, 20]} intensity={0.12} color="#c0d8ff" castShadow={false} />
+      <directionalLight position={[-30, 9, -35]} intensity={0.4} color="#6a86c8" castShadow={false} />
+      <directionalLight position={[0, 22, 25]} intensity={0.15} color="#ffd9b0" castShadow={false} />
     </>
   );
 }
@@ -116,12 +118,12 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
 
   return (
     <>
-      {/* Daylight sky -- bright Florida blue, fog fades terrain into it */}
-      <color attach="background" args={["#9cc4e0"]} />
-      <fog attach="fog" args={["#a8c8de", 110, 320]} />
+      {/* Golden hour sky -- warm peach haze, fog fades terrain into it */}
+      <color attach="background" args={["#e0a878"]} />
+      <fog attach="fog" args={["#dba57e", 110, 320]} />
       <Lighting />
-      {/* HDR environment -- sky, ambient bounce, reflections on water */}
-      <Environment preset="park" background={false} environmentIntensity={0.85} />
+      {/* HDR environment -- sunset sky drives warm water reflections */}
+      <Environment preset="sunset" background={false} environmentIntensity={0.65} />
       {/* Contact shadow patch under green for ground grounding */}
       <ContactShadows
         position={[2, 0.07, -5]}
@@ -189,7 +191,7 @@ export function Sawgrass17({
     <Canvas
       dpr={[1, 2]}
       camera={{ fov: FOV, near: 0.5, far: 500, position: DEFAULT_CAMERA_POS.toArray() }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.25 }}
       shadows={{ type: THREE.PCFShadowMap }}
       style={{ background: "#0a0a0a", width: "100%", height: "100%" }}
     >

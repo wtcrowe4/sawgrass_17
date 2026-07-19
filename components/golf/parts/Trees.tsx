@@ -89,6 +89,7 @@ interface TreeInstance {
   scale: number;
   rotY: number;
   shade: number; // 0..1 for color lerp
+  pine: boolean; // slash pine vs live oak
 }
 
 function isBlocked(x: number, z: number): boolean {
@@ -118,6 +119,7 @@ function buildInstances(): TreeInstance[] {
         scale: band.sMin + rng() * (band.sMax - band.sMin),
         rotY: rng() * Math.PI * 2,
         shade: rng(),
+        pine: rng() < 0.72, // Florida treeline: mostly slash pine, some live oak
       });
       placed++;
     }
@@ -125,58 +127,67 @@ function buildInstances(): TreeInstance[] {
   return out;
 }
 
-const BASE_HEIGHT = 5.5;
-const BASE_RADIUS = 0.95;
-
+// Two archetypes built from shared unit geometry, non-uniformly scaled per
+// instance: slash pine (tall bare trunk, small high crown) and live oak
+// (short thick trunk, broad low crown). Matches the real mixed treeline in
+// the Getty aerials -- the old uniform cone forest read as toy conifers.
 export function Trees() {
-  const conesRef  = useRef<THREE.InstancedMesh>(null);
   const trunksRef = useRef<THREE.InstancedMesh>(null);
+  const crownARef = useRef<THREE.InstancedMesh>(null);
+  const crownBRef = useRef<THREE.InstancedMesh>(null);
 
-  const { instances, coneGeo, trunkGeo } = useMemo(() => {
-    const cone  = new THREE.ConeGeometry(BASE_RADIUS, BASE_HEIGHT, 7, 1, false);
-    const trunk = new THREE.CylinderGeometry(0.12, 0.18, 0.9, 6);
-    return { instances: buildInstances(), coneGeo: cone, trunkGeo: trunk };
+  const { instances, trunkGeo, crownGeo } = useMemo(() => {
+    const trunk = new THREE.CylinderGeometry(0.5, 0.62, 1, 6);
+    const crown = new THREE.SphereGeometry(1, 8, 6);
+    return { instances: buildInstances(), trunkGeo: trunk, crownGeo: crown };
   }, []);
 
   useEffect(() => {
-    const cones  = conesRef.current;
     const trunks = trunksRef.current;
-    if (!cones || !trunks) return;
+    const crownA = crownARef.current;
+    const crownB = crownBRef.current;
+    if (!trunks || !crownA || !crownB) return;
 
     const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
     const color = new THREE.Color();
-    const cMid  = new THREE.Color(CYPRESS_MID);
-    const cLight = new THREE.Color(CYPRESS_LIGHT);
-    const cDark = new THREE.Color(CYPRESS_DARK);
+    const PINE_TONES = ["#223f27", "#2c5433", "#3a6641"];
+    const OAK_TONES  = ["#2c5433", "#40704a", "#4d7f54"];
 
     instances.forEach((inst, i) => {
-      const treeY = (BASE_HEIGHT * inst.scale) / 2 + 0.45;
-      m.compose(
-        new THREE.Vector3(inst.x, treeY, inst.z),
-        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), inst.rotY),
-        new THREE.Vector3(inst.scale, inst.scale, inst.scale)
-      );
-      cones.setMatrixAt(i, m);
+      const s = inst.scale;
+      const ox = Math.cos(inst.rotY) * (inst.pine ? 0.6 : 0.9) * s;
+      const oz = Math.sin(inst.rotY) * (inst.pine ? 0.6 : 0.9) * s;
 
-      // Trunk
-      const trunkY = 0.45 * inst.scale;
-      m.compose(
-        new THREE.Vector3(inst.x, trunkY, inst.z),
-        new THREE.Quaternion(),
-        new THREE.Vector3(inst.scale, inst.scale, inst.scale)
-      );
-      trunks.setMatrixAt(i, m);
+      if (inst.pine) {
+        m.compose(new THREE.Vector3(inst.x, 2.1 * s, inst.z), q, new THREE.Vector3(0.2 * s, 4.2 * s, 0.2 * s));
+        trunks.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(inst.x, 4.35 * s, inst.z), q, new THREE.Vector3(1.25 * s, 0.8 * s, 1.25 * s));
+        crownA.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(inst.x + ox, 3.7 * s, inst.z + oz), q, new THREE.Vector3(0.85 * s, 0.6 * s, 0.85 * s));
+        crownB.setMatrixAt(i, m);
+      } else {
+        m.compose(new THREE.Vector3(inst.x, 0.95 * s, inst.z), q, new THREE.Vector3(0.45 * s, 1.9 * s, 0.45 * s));
+        trunks.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(inst.x, 2.3 * s, inst.z), q, new THREE.Vector3(1.9 * s, 1.25 * s, 1.75 * s));
+        crownA.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(inst.x + ox, 1.9 * s, inst.z + oz), q, new THREE.Vector3(1.15 * s, 0.85 * s, 1.05 * s));
+        crownB.setMatrixAt(i, m);
+      }
 
-      // Per-instance color
-      if (inst.shade < 0.4) color.copy(cDark);
-      else if (inst.shade < 0.75) color.copy(cMid);
-      else color.copy(cLight);
-      cones.setColorAt(i, color);
+      const tones = inst.pine ? PINE_TONES : OAK_TONES;
+      const tone = inst.shade < 0.4 ? tones[0] : inst.shade < 0.75 ? tones[1] : tones[2];
+      color.set(tone);
+      crownA.setColorAt(i, color);
+      color.multiplyScalar(0.82);
+      crownB.setColorAt(i, color);
     });
 
-    cones.instanceMatrix.needsUpdate = true;
-    if (cones.instanceColor) cones.instanceColor.needsUpdate = true;
     trunks.instanceMatrix.needsUpdate = true;
+    crownA.instanceMatrix.needsUpdate = true;
+    crownB.instanceMatrix.needsUpdate = true;
+    if (crownA.instanceColor) crownA.instanceColor.needsUpdate = true;
+    if (crownB.instanceColor) crownB.instanceColor.needsUpdate = true;
   }, [instances]);
 
   return (
@@ -189,15 +200,22 @@ export function Trees() {
       >
         <meshStandardMaterial color={TRUNK_COLOR} roughness={1.0} metalness={0.0} />
       </instancedMesh>
-
+      {/* base color white -- per-instance colors multiply against it */}
       <instancedMesh
-        ref={conesRef}
-        args={[coneGeo, undefined, instances.length]}
+        ref={crownARef}
+        args={[crownGeo, undefined, instances.length]}
         castShadow={false}
         receiveShadow={false}
       >
-        {/* base color white -- per-instance colors multiply against it */}
-        <meshStandardMaterial color="#ffffff" roughness={1.0} metalness={0.0} vertexColors={false} />
+        <meshStandardMaterial color="#ffffff" roughness={1.0} metalness={0.0} />
+      </instancedMesh>
+      <instancedMesh
+        ref={crownBRef}
+        args={[crownGeo, undefined, instances.length]}
+        castShadow={false}
+        receiveShadow={false}
+      >
+        <meshStandardMaterial color="#ffffff" roughness={1.0} metalness={0.0} />
       </instancedMesh>
     </group>
   );
