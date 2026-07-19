@@ -17,6 +17,10 @@ const BALL_R       = 0.07;
 const DOT_R        = 0.12;
 const LINE_OPACITY = 0.75;
 const ARC_SEGMENTS = 64;
+// After landing, arcs fade to a faint trace so large datasets read as a
+// scatter of landing dots instead of 100+ arcs of spaghetti.
+const FADE_S       = 2.5;
+const FADED_OPACITY = 0.1;
 
 // Tooltip
 function ShotTooltip({ shot, visible }: { shot: Shot; visible: boolean }) {
@@ -75,16 +79,16 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
   );
 
   // Geometry + material created once -- never recreated during animation
-  const { linePrimitive, arcGeo } = useMemo(() => {
+  const { linePrimitive, arcGeo, lineMat } = useMemo(() => {
     const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPoints);
     arcGeo.setDrawRange(0, 0);
-    const mat = new THREE.LineBasicMaterial({
+    const lineMat = new THREE.LineBasicMaterial({
       color: new THREE.Color(color),
       transparent: true,
       opacity: LINE_OPACITY,
     });
-    const linePrimitive = new THREE.Line(arcGeo, mat);
-    return { linePrimitive, arcGeo };
+    const linePrimitive = new THREE.Line(arcGeo, lineMat);
+    return { linePrimitive, arcGeo, lineMat };
   }, [arcPoints, color]);
 
   // Imperative animation -- drawRange + ball position, no state writes
@@ -98,6 +102,14 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
       : Math.max(2, Math.floor(progress * arcPoints.length));
 
     arcGeo.setDrawRange(0, count);
+
+    // Fade the arc to a faint trace after landing; hover restores it
+    if (done) {
+      const fade = Math.min(1, (t - DURATION_S) / FADE_S);
+      lineMat.opacity = hovered
+        ? LINE_OPACITY
+        : LINE_OPACITY - fade * (LINE_OPACITY - FADED_OPACITY);
+    }
 
     if (ballRef.current) {
       if (!done) {
