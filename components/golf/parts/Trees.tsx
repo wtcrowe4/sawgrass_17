@@ -52,10 +52,14 @@ export function inLake(wx: number, wz: number): boolean {
 // Grandstand keep-outs (world x, z, radius)
 const KEEPOUTS: [number, number, number][] = [
   [-19.0, 7.0, 6],   // NE shore stand
-  [-3.5, 10.5, 6],   // behind-green stand
-  [9.0, -48.5, 7],   // main tee stand
+  [-6.0, 10.0, 6],   // behind-green stand
+  [1.5, 10.8, 5],    // videoboard
+  [9.0, -48.5, 8],   // main tee stand
   [-8.2, -45.5, 6],  // tee-right stand
-  [-2.4, -50.5, 6],  // behind-tee stand
+  [-2.4, -50.5, 7],  // behind-tee stand
+  [-21.2, 1.0, 6],   // east stadium wall N segment
+  [-22.8, -9.8, 6],  // east stadium wall S segment
+  [8.9, 9.9, 5],     // back-shore tent row
 ];
 
 interface Band {

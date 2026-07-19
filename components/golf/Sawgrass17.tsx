@@ -11,7 +11,6 @@ import { Water } from "./parts/Water";
 import { Terrain } from "./parts/Terrain";
 import { TeeAreas } from "./parts/TeeAreas";
 import { CartPath } from "./parts/CartPath";
-import { DistanceMarkers } from "./parts/DistanceMarkers";
 import { Pin } from "./parts/Pin";
 import { Trees } from "./parts/Trees";
 import { Tracers } from "./parts/Tracers";
@@ -142,7 +141,6 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <GrassApproach />
       <IslandBunker />
       <CartPath />
-      <DistanceMarkers />
       <TeeAreas />
       <Pin pin={pin} />
       <Trees />

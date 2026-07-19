@@ -44,11 +44,16 @@ interface StandCfg {
 
 // Grandstands (see layout notes above).
 const STANDS: StandCfg[] = [
-  { x:  9.0, z: -48.5, len: 8.0, depth: 2.8, scale: 1.25 }, // main -- left of tee (SW)
-  { x: -2.4, z: -50.5, len: 7.0, depth: 2.6 },              // behind pro tee
+  { x:  9.0, z: -48.5, len: 11.0, depth: 3.2, scale: 1.4 }, // main -- left of tee (SW), stadium scale
+  { x: -2.4, z: -50.5, len: 9.0, depth: 2.8, scale: 1.15 }, // behind pro tee
   { x: -8.2, z: -45.5, len: 5.5, depth: 2.4 },              // right of tee (E)
   { x: -19.0, z:  7.0, len: 8.0, depth: 2.6 },              // NE shore, between 16 + 17 greens
   { x: -6.0, z: 10.0, len: 7.0, depth: 2.4 },               // mound behind green, east of videoboard
+  // East-bank stadium wall (getty 2205306924: one long continuous stand) --
+  // two segments following the shoreline, set back so the footprint stays
+  // on land (the bank curves west below z=-5)
+  { x: -21.2, z:  1.0, len: 8.5, depth: 2.8, scale: 1.2 },
+  { x: -22.8, z: -9.8, len: 8.5, depth: 2.8, scale: 1.2 },
 ];
 
 // Hospitality suites -- west shore row + back-shore row flanking the
