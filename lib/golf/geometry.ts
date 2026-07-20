@@ -591,7 +591,6 @@ const CART_PATH_CENTERLINE_YDS: [number, number][] = [
   [-52.5,  75.7],
   [-49.2,  66.9],
   [-47.4,  55.7],
-  [-48.5,  64.7],
   [-46.8,  51.1],
   [-50.8,  34.4],
   [-53.6,  21.9],
@@ -602,14 +601,12 @@ const CART_PATH_CENTERLINE_YDS: [number, number][] = [
   [-65.4, -14.9],
   [-70.9, -18.7],
   [-74.3, -21.7],
-  [-73.2, -27.1],
-  [-80.6, -31.9],
-  [-85.6, -24.6],
-  [-78.7, -19.3],
-  [-85.3,  -9.8],
-  [-87.4, -43.7],
-  [-66.3, -37.1],
-  [-70.0, -45.4],
+  // Smooth NE exit toward 16 (replaced 2026-07-19: the traced tail
+  // zigzagged x 20..26 / z 3..14 in world units, scribbling asphalt
+  // over the NW spectator ground)
+  [-81.7, -27.3],
+  [-88.3, -35.0],
+  [-91.7, -45.0],
 ];
 
 export function makeCartPathShape(): THREE.Shape {

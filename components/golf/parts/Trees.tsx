@@ -53,16 +53,16 @@ export function inLake(wx: number, wz: number): boolean {
 const KEEPOUTS: [number, number, number][] = [
   [-6.0, 10.0, 6],   // behind-green stand
   [1.5, 10.8, 5],    // videoboard
-  [9.0, -48.5, 8],   // main tee stand
+  [14.0, -51.5, 8],  // main tee stand
   [-8.2, -45.5, 6],  // tee-right stand
   [-2.4, -50.5, 7],  // behind-tee stand
-  [19.5, -9.5, 7],   // west-shore stadium row
-  [21.0, 0.0, 7],
-  [20.5, 8.0, 7],
-  [19.0, -19.0, 5],  // west hospitality tents
-  [18.2, -26.0, 5],
+  [20.3, -13.0, 7],  // west-shore stadium row
+  [20.8, -3.5, 7],
+  [22.5, 10.5, 6],
+  [19.0, -20.5, 5],  // west hospitality tents
+  [19.5, -27.5, 5],
   [7.5, 10.7, 5],    // back-shore tent pair
-  [20.5, 12.0, 4],   // NW corner tent
+  [18.5, 13.5, 4],   // NW corner tent
   [-28.2, -27.2, 8], // 16th green complex (green + bunkers + oak, south end)
   [-23.0, 4.0, 5],   // 16th fairway start (north end)
 ];
