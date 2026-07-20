@@ -204,10 +204,14 @@ const ZONES: Zone[] = [
   { xMin: 17.5, xMax: 21.0, zMin: -28, zMax: -12, count: 60, faceX: 0, faceZ: -15 },
   // Rail strip between the west cart path and the water, below the stands
   { xMin: 14.0, xMax: 15.4, zMin: -12, zMax: -3, count: 25, faceX: 4.5, faceZ: -5.5 },
-  // South bank between the tee stands and the water
-  { xMin: -14, xMax: 14, zMin: -43, zMax: -38, count: 80, faceX: 4.5, faceZ: -5.5 },
-  // Tee-side mounds east of the walkway
-  { xMin: -16, xMax: -10, zMin: -38, zMax: -28, count: 45, faceX: 4.5, faceZ: -5.5 },
+  // Tee gallery -- fans stand BEHIND the ropes, never on the course. The
+  // cart path runs up the west side (x ~7->17.5 as z goes -53->-30); these
+  // pack the berm behind the tee and a tight rope-line OUTBOARD of the path,
+  // running up-and-down roughly the same line as the west grandstands.
+  // Berm behind the tee boxes (z < back of tee ~ -49), densely packed
+  { xMin: -7, xMax: 16, zMin: -55, zMax: -50, count: 120, faceX: 4.5, faceZ: -5.5 },
+  // West rope-line gallery, outboard of the cart path, tee up to the stands
+  { xMin: 18.2, xMax: 19.6, zMin: -34, zMax: -13, count: 95, faceX: 4.5, faceZ: -5.5 },
 ];
 
 export function StandingCrowds() {
