@@ -56,13 +56,13 @@ const KEEPOUTS: [number, number, number][] = [
   [9.0, -48.5, 8],   // main tee stand
   [-8.2, -45.5, 6],  // tee-right stand
   [-2.4, -50.5, 7],  // behind-tee stand
-  [17.0, -4.0, 7],   // west-shore stadium row
-  [16.5, -13.5, 7],
-  [15.5, -23.0, 7],
-  [20.3, -11.5, 5],  // west concourse tents
-  [19.5, -22.5, 5],
+  [19.5, -9.5, 7],   // west-shore stadium row
+  [21.0, 0.0, 7],
+  [20.5, 8.0, 7],
+  [19.0, -19.0, 5],  // west hospitality tents
+  [18.2, -26.0, 5],
   [7.5, 10.7, 5],    // back-shore tent pair
-  [19.8, 2.0, 4],    // NW shore tent
+  [20.5, 12.0, 4],   // NW corner tent
   [-28.2, -27.2, 8], // 16th green complex (green + bunkers + oak, south end)
   [-23.0, 4.0, 5],   // 16th fairway start (north end)
 ];

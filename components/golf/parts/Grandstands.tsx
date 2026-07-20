@@ -49,24 +49,23 @@ const STANDS: StandCfg[] = [
   { x: -8.2, z: -45.5, len: 5.5, depth: 2.4 },              // right of tee (E)
   // Behind the green, east of the videoboard
   { x: -6.0, z: 10.0, len: 7.0, depth: 2.4 },
-  // West-shore stadium row facing the island green (getty 1248046004:
-  // the big multi-tier stands line the WEST side; the east bank is the
-  // 16th fairway corridor and stays clear)
-  { x: 17.0, z: -4.0, len: 9.0, depth: 2.8, scale: 1.2 },
-  { x: 16.5, z: -13.5, len: 9.0, depth: 3.0, scale: 1.3 },
-  { x: 15.5, z: -23.0, len: 9.0, depth: 2.8, scale: 1.2 },
+  // West-shore stadium row facing the island green (getty 1248046004).
+  // Sits OUTBOARD of the lakeside cart path (path runs x 14..17.5 through
+  // here) and spans north so the row ends near the videoboard.
+  { x: 19.5, z: -9.5, len: 9.0, depth: 2.8, scale: 1.2 },
+  { x: 21.0, z:  0.0, len: 8.5, depth: 3.0, scale: 1.3 },
+  { x: 20.5, z:  8.0, len: 7.5, depth: 2.8, scale: 1.2 },
 ];
 
 // Hospitality suites -- west shore row + back-shore row flanking the
 // videoboard (getty 2113291318: white peaked tents line the shore behind green).
 const TENTS: { x: number; z: number }[] = [
-  // Outboard of the west-shore stadium row (concourse side)
-  { x: 20.8, z: -6.0 },
-  { x: 20.3, z: -11.5 },
-  { x: 19.8, z: -17.0 },
-  { x: 19.5, z: -22.5 },
-  { x: 18.0, z: -27.5 },
-  { x: 19.8, z:  2.0 },  // NW shore (lake lobe covers x 10..16 up here)
+  // Hospitality row south of the stadium row, west of the cart path
+  { x: 19.5, z: -14.5 },
+  { x: 19.0, z: -19.0 },
+  { x: 18.5, z: -23.5 },
+  { x: 17.9, z: -28.0 },
+  { x: 20.5, z: 12.0 },  // NW corner behind the north stand
   { x:  6.2, z: 10.4 },  // west of videoboard
   { x:  8.7, z: 11.0 },
 ];

@@ -200,8 +200,10 @@ const ZONES: Zone[] = [
   // East shore rail (screen right) -- ropes line along the 16th fairway side,
   // no stands over there
   { xMin: -18.6, xMax: -17.2, zMin: -20, zMax: 5, count: 40, faceX: 4.5, faceZ: -5.5 },
-  // West shore behind the hospitality suites (screen left)
-  { xMin: 18.0, xMax: 21.5, zMin: -28, zMax: 2, count: 100, faceX: 0, faceZ: -15 },
+  // West hospitality row concourse (screen left, south of the stadium row)
+  { xMin: 17.5, xMax: 21.0, zMin: -28, zMax: -12, count: 60, faceX: 0, faceZ: -15 },
+  // Rail strip between the west cart path and the water, below the stands
+  { xMin: 14.0, xMax: 15.4, zMin: -12, zMax: -3, count: 25, faceX: 4.5, faceZ: -5.5 },
   // South bank between the tee stands and the water
   { xMin: -14, xMax: 14, zMin: -43, zMax: -38, count: 80, faceX: 4.5, faceZ: -5.5 },
   // Tee-side mounds east of the walkway
