@@ -52,13 +52,15 @@ export function inLake(wx: number, wz: number): boolean {
 // Grandstand keep-outs (world x, z, radius)
 const KEEPOUTS: [number, number, number][] = [
   [-6.0, 10.0, 6],   // behind-green stand
-  [-11.5, 8.8, 6],   // behind-green stand (relocated from NE shore)
-  [-16.5, 8.0, 6],   // behind-green stand (relocated from east wall N)
   [1.5, 10.8, 5],    // videoboard
   [9.0, -48.5, 8],   // main tee stand
   [-8.2, -45.5, 6],  // tee-right stand
   [-2.4, -50.5, 7],  // behind-tee stand
-  [-22.8, -9.8, 6],  // stand between 17 lake and 16 fairway
+  [17.0, -4.0, 7],   // west-shore stadium row
+  [16.5, -13.5, 7],
+  [15.5, -23.0, 7],
+  [20.3, -11.5, 5],  // west concourse tents
+  [19.5, -22.5, 5],
   [7.5, 10.7, 5],    // back-shore tent pair
   [19.8, 2.0, 4],    // NW shore tent
   [-28.2, -27.2, 8], // 16th green complex (green + bunkers + oak, south end)

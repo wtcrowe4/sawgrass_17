@@ -197,8 +197,9 @@ interface Zone {
 const ZONES: Zone[] = [
   // Behind the green, between the two stands
   { xMin: -12, xMax: 5, zMin: 5.5, zMax: 8.5, count: 90, faceX: 4.5, faceZ: -5.5 },
-  // East shore rail (screen right) -- strip between the stadium wall and water
-  { xMin: -18.6, xMax: -17.2, zMin: -20, zMax: 5, count: 70, faceX: 4.5, faceZ: -5.5 },
+  // East shore rail (screen right) -- ropes line along the 16th fairway side,
+  // no stands over there
+  { xMin: -18.6, xMax: -17.2, zMin: -20, zMax: 5, count: 40, faceX: 4.5, faceZ: -5.5 },
   // West shore behind the hospitality suites (screen left)
   { xMin: 18.0, xMax: 21.5, zMin: -28, zMax: 2, count: 100, faceX: 0, faceZ: -15 },
   // South bank between the tee stands and the water

@@ -47,24 +47,25 @@ const STANDS: StandCfg[] = [
   { x:  9.0, z: -48.5, len: 11.0, depth: 3.2, scale: 1.4 }, // main -- left of tee (SW), stadium scale
   { x: -2.4, z: -50.5, len: 9.0, depth: 2.8, scale: 1.15 }, // behind pro tee
   { x: -8.2, z: -45.5, len: 5.5, depth: 2.4 },              // right of tee (E)
-  // Behind-green arc east of the videoboard (getty 2082122646/1248046004);
-  // former NE-shore + east-wall-N stands moved here -- that ground is the
-  // 16th green complex (see Hole16.tsx)
+  // Behind the green, east of the videoboard
   { x: -6.0, z: 10.0, len: 7.0, depth: 2.4 },
-  { x: -11.5, z: 8.8, len: 8.0, depth: 2.6, scale: 1.15 },
-  { x: -16.5, z: 8.0, len: 7.0, depth: 2.6 },
-  // Between 17's lake and the 16th fairway, south of 16 green
-  { x: -22.8, z: -9.8, len: 8.5, depth: 2.8, scale: 1.2 },
+  // West-shore stadium row facing the island green (getty 1248046004:
+  // the big multi-tier stands line the WEST side; the east bank is the
+  // 16th fairway corridor and stays clear)
+  { x: 17.0, z: -4.0, len: 9.0, depth: 2.8, scale: 1.2 },
+  { x: 16.5, z: -13.5, len: 9.0, depth: 3.0, scale: 1.3 },
+  { x: 15.5, z: -23.0, len: 9.0, depth: 2.8, scale: 1.2 },
 ];
 
 // Hospitality suites -- west shore row + back-shore row flanking the
 // videoboard (getty 2113291318: white peaked tents line the shore behind green).
 const TENTS: { x: number; z: number }[] = [
-  { x: 18.0, z: -6.0 },
-  { x: 17.5, z: -11.5 },
-  { x: 16.5, z: -17.0 },
-  { x: 16.3, z: -22.0 },
-  { x: 14.5, z: -27.0 },
+  // Outboard of the west-shore stadium row (concourse side)
+  { x: 20.8, z: -6.0 },
+  { x: 20.3, z: -11.5 },
+  { x: 19.8, z: -17.0 },
+  { x: 19.5, z: -22.5 },
+  { x: 18.0, z: -27.5 },
   { x: 19.8, z:  2.0 },  // NW shore (lake lobe covers x 10..16 up here)
   { x:  6.2, z: 10.4 },  // west of videoboard
   { x:  8.7, z: 11.0 },
