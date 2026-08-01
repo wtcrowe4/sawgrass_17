@@ -46,7 +46,9 @@ rm -f "$WSL_DIR/$NAME"
 
 # Pre-warm: the first request after an edit hits Turbopack mid-recompile and
 # the capture lands on the "Compiling..." splash instead of the scene.
-curl -s -o /dev/null --max-time 90 "$URL" || true
+curl -s -o /dev/null --max-time 120 "$URL" || true
+sleep 3
+curl -s -o /dev/null --max-time 120 "$URL" || true
 sleep 2
 
 # --headless (old) is required: --headless=new ignores --screenshot here.

@@ -680,3 +680,49 @@ export function makeGrassApproachShape(): THREE.Shape {
   const smooth = spline.getPoints(160);
   return new THREE.Shape(smooth);
 }
+
+// ============================================================
+// POLYGON OFFSET (shared by Terrain's shore ring + Bulkhead)
+// ============================================================
+
+export function polygonSignedArea(p: THREE.Vector2[]): number {
+  let a = 0;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+    a += (p[j].x + p[i].x) * (p[j].y - p[i].y);
+  }
+  return a / 2;
+}
+
+function offsetRaw(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
+  const ccw = polygonSignedArea(pts) > 0;
+  const n = pts.length;
+  const out: THREE.Vector2[] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const cur = pts[i];
+    const next = pts[(i + 1) % n];
+    const e1 = new THREE.Vector2(cur.x - prev.x, cur.y - prev.y).normalize();
+    const e2 = new THREE.Vector2(next.x - cur.x, next.y - cur.y).normalize();
+    const n1 = ccw ? new THREE.Vector2(e1.y, -e1.x) : new THREE.Vector2(-e1.y, e1.x);
+    const n2 = ccw ? new THREE.Vector2(e2.y, -e2.x) : new THREE.Vector2(-e2.y, e2.x);
+    const sum = n1.add(n2);
+    const len = sum.length();
+    // Miter correction, clamped: averaged normals shorten at corners, but at a
+    // spike the correction runs away and flings the vertex across the shape.
+    const miter = len > 1e-6 ? Math.min(1.6, 2 / len) : 1;
+    const nrm = sum.normalize();
+    out.push(new THREE.Vector2(cur.x + nrm.x * d * miter, cur.y + nrm.y * d * miter));
+  }
+  return out;
+}
+
+/**
+ * Offset a closed polygon outward by d (shape space).
+ * Self-correcting: winding is verified by comparing areas, because guessing it
+ * wrong silently collapses the polygon inward instead of growing it.
+ */
+export function offsetPolygon(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
+  const grown = offsetRaw(pts, d);
+  if (Math.abs(polygonSignedArea(grown)) >= Math.abs(polygonSignedArea(pts))) return grown;
+  return offsetRaw(pts, -d);
+}

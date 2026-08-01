@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
-import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape } from "@/lib/golf/geometry";
+import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape, offsetPolygon } from "@/lib/golf/geometry";
 
 // Bulkhead -- wooden retaining walls around all land/water boundaries.
 //
@@ -17,6 +17,7 @@ import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape } from "@/
 const BULKHEAD_HEIGHT = 0.5;
 const BULKHEAD_SCALE  = 1.04;
 const LAKE_WALL_WIDTH = 0.35;  // wu -- thin sliver at shore edge
+const WALKWAY_WALL_WIDTH = 0.34; // wu -- rim proud of the walkway edge
 // Weathered timber -- the real island is edged with dark wooden plank walls
 const TIMBER_COLOR    = "#6a5340";
 const TIMBER_DARK     = "#4a3a2c";
@@ -101,8 +102,16 @@ export function Bulkhead() {
     lakeGeo.rotateX(-Math.PI / 2);
     lakeGeo.translate(0, -BULKHEAD_HEIGHT, 0);
 
-    // 3. Grass approach edge walls (cap covered by GrassApproach mesh above)
-    const approachGeo = new THREE.ExtrudeGeometry(makeGrassApproachShape(), extSettings);
+    // 3. Walkway to the green.
+    // Was extruded from the approach outline ITSELF, so its cap sat exactly
+    // under the GrassApproach mesh and only ~0.02wu of wall cleared the water
+    // -- invisible from every angle. The green island reads because its wall is
+    // scaled 4% out, leaving a visible rim. Same idea here, but offset by a
+    // fixed distance instead of scaled: the walkway is far off-origin, so a
+    // scalar multiply would translate it rather than widen it.
+    const approachPts = makeGrassApproachShape().getPoints(96);
+    const approachOuter = new THREE.Shape(offsetPolygon(approachPts, WALKWAY_WALL_WIDTH));
+    const approachGeo = new THREE.ExtrudeGeometry(approachOuter, extSettings);
     approachGeo.rotateX(-Math.PI / 2);
     approachGeo.translate(0, -BULKHEAD_HEIGHT, 0);
 

@@ -68,8 +68,14 @@ function offsetRaw(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
     // outward normal of an edge depends on winding
     const n1 = ccw ? new THREE.Vector2(e1.y, -e1.x) : new THREE.Vector2(-e1.y, e1.x);
     const n2 = ccw ? new THREE.Vector2(e2.y, -e2.x) : new THREE.Vector2(-e2.y, e2.x);
-    const nrm = n1.add(n2).normalize();
-    out.push(new THREE.Vector2(cur.x + nrm.x * d, cur.y + nrm.y * d));
+    const sum = n1.add(n2);
+    const len = sum.length();
+    // Miter: averaged normals shorten at sharp corners, so dividing by the
+    // half-angle keeps the offset distance uniform -- clamped, because at a
+    // spike that factor runs away.
+    const miter = len > 1e-6 ? Math.min(1.6, 2 / len) : 1;
+    const nrm = sum.normalize();
+    out.push(new THREE.Vector2(cur.x + nrm.x * d * miter, cur.y + nrm.y * d * miter));
   }
   return out;
 }
@@ -79,11 +85,35 @@ export function Terrain() {
     const lake = getLakeOutlinePoints();
     const ringOuter = offsetPolygon(lake, RING_OUTER);
 
-    // --- 1. ring: flat, exact inner edge ---
-    const ringShape = new THREE.Shape(ringOuter);
-    ringShape.holes.push(new THREE.Path([...lake].reverse()));
-    const ringGeo = new THREE.ShapeGeometry(ringShape, 2);
-    ringGeo.rotateX(-Math.PI / 2);
+    // --- 1. ring: explicit quad strip, lake[i] -> ringOuter[i] ---
+    // NOT earcut over the offset outline. Offsetting a concave outline makes
+    // it self-intersect at sharp vertices, and earcut then bridges the loop
+    // with long triangles that stab across the water (the wedge by the tees
+    // and the spike in the east arm). A strip keeps every triangle local and
+    // no wider than the offset, so a local self-intersection stays local.
+    const rp: number[] = [];
+    const ru: number[] = [];
+    const n = lake.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      // world: (sx, -sy)
+      const q = [
+        [lake[i].x, -lake[i].y],
+        [lake[j].x, -lake[j].y],
+        [ringOuter[j].x, -ringOuter[j].y],
+        [ringOuter[i].x, -ringOuter[i].y],
+      ];
+      for (const [a, b, d] of [[0, 2, 1], [0, 3, 2]]) {
+        for (const k of [a, b, d]) {
+          rp.push(q[k][0], 0, q[k][1]);
+          ru.push(q[k][0] / UV_TILE, q[k][1] / UV_TILE);
+        }
+      }
+    }
+    const ringGeo = new THREE.BufferGeometry();
+    ringGeo.setAttribute("position", new THREE.Float32BufferAttribute(rp, 3));
+    ringGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ru, 2));
+    ringGeo.computeVertexNormals();
 
     // --- 2. displaced grid, cells inside skipPoly removed ---
     const step = (GRID_EXTENT * 2) / GRID_N;
