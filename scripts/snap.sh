@@ -19,6 +19,10 @@
 #   NEVER launch chromium inside WSL against this scene -- it falls back to
 #   SwiftShader and the R3F frame loop pins ~8 cores until killed.
 #
+#   Renders on the real GPU via ANGLE d3d11 (confirmed: THREE logs HLSL X4122
+#   shader warnings, which SwiftShader never produces). Software rasterization
+#   could not finish a frame with the postprocessing composer attached.
+#
 # Appends ?nointro=1 so the cinematic camera sweep is skipped; virtual time
 # does not advance useFrame deltas, so the intro would freeze mid-flight.
 set -euo pipefail
@@ -45,7 +49,8 @@ rm -f "$WSL_DIR/$NAME"
 # has not fully released its lock. Hard timeout because --virtual-time-budget
 # only advances while the page is idle, and R3F's rAF loop never goes idle --
 # without this Chrome can hang forever instead of writing the frame.
-timeout 90 "$CHROME_EXE" --headless --disable-gpu --hide-scrollbars --no-first-run \
+timeout 150 "$CHROME_EXE" --headless --use-angle=d3d11 --enable-gpu-rasterization \
+  --hide-scrollbars --no-first-run \
   --user-data-dir="$PROFILE" \
   --window-size=1280,720 --virtual-time-budget="$BUDGET" \
   --screenshot="$WIN_DIR\\$NAME" "$URL" > /dev/null 2>&1 || true

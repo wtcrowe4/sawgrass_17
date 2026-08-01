@@ -37,6 +37,10 @@ function toGreenPoly(wx: number, wz: number): string {
 
 type TraceTarget = "lake" | "green";
 
+// Postprocessing is installed and wired but OFF: EffectComposer breaks
+// MeshReflectorMaterial and flattens the lake. Flip to true to re-evaluate.
+const POST_FX = false;
+
 export function Sawgrass17Client() {
   const [pin, setPin]                 = useState<PinPosition>("sunday");
   const [hoveredShot, setHoveredShot] = useState<Shot | null>(null);
@@ -54,8 +58,11 @@ export function Sawgrass17Client() {
   // intro would otherwise freeze the camera at its start position.
   // Set in an effect (not during render) to keep SSR/client markup identical.
   const [noIntro, setNoIntro] = useState(false);
+  const [noPost, setNoPost] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("nointro")) setNoIntro(true);
+    const q = new URLSearchParams(window.location.search);
+    if (q.has("nointro")) setNoIntro(true);
+    if (q.has("nopost")) setNoPost(true);
   }, []);
 
   const handleHover = useCallback((shot: Shot | null) => setHoveredShot(shot), []);
@@ -84,6 +91,7 @@ export function Sawgrass17Client() {
         showSplat={showSplat}
         splatUrl={splatUrl}
         showProps={showProps}
+        post={!noPost && POST_FX}
       />
 
       {/* top-left: hole info */}

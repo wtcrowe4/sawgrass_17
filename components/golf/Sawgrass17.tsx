@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
+import { EffectComposer, Bloom, SMAA, Vignette } from "@react-three/postprocessing";
 import * as THREE from 'three';
 
 import { Green } from "./parts/Green";
@@ -45,6 +46,8 @@ export interface Sawgrass17Props {
    *  Default OFF -- terrain/lighting work happens on a clean scene.
    *  Nothing is deleted; flip this on to check prop scale. */
   showProps?: boolean;
+  /** Postprocessing stack. ?nopost=1 disables for A/B. */
+  post?: boolean;
 }
 
 // --- Camera config ------------------------------------------------------------
@@ -126,9 +129,10 @@ interface SceneProps {
   showSplat?: boolean;
   splatUrl?: string;
   showProps: boolean;
+  post: boolean;
 }
 
-function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps }: SceneProps) {
+function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post }: SceneProps) {
   useCinematicIntro(intro);
 
   return (
@@ -194,6 +198,24 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <SatelliteOverlay visible={showSatellite ?? false} rotDeg={satRotation ?? 0} />
       <TracerPlane active={traceMode ?? false} onPoint={onTracePoint ?? (() => {})} />
       <Tracers shots={shots} onHoverShot={onHoverShot} />
+      {/* Post -- DEFAULT OFF. Measured 2026-08-01: attaching EffectComposer
+          flattens the lake from the reflector's blue depth to dead grey.
+          MeshReflectorMaterial runs its own render pass, which the composer's
+          takeover of the render target breaks. Water is the scene's most
+          important surface, so a mild vignette is not worth losing it.
+          Everything stays wired -- pass post to re-enable, or ?nopost=1 to
+          force off. Revisit when water moves to a custom shader.
+          SMAA replaces the canvas MSAA (gl.antialias is off below).
+          Bloom is threshold-gated ABOVE the tracers' emissive output: landing
+          dots run emissiveIntensity 0.35-0.9 and haloing them would smear the
+          one layer that carries the data. */}
+      {post && (
+      <EffectComposer multisampling={0} enableNormalPass={false}>
+        <SMAA />
+        <Bloom intensity={0.35} luminanceThreshold={0.92} luminanceSmoothing={0.15} mipmapBlur />
+        <Vignette offset={0.28} darkness={0.42} eskil={false} />
+      </EffectComposer>
+      )}
       <OrbitControls
         target={DEFAULT_TARGET}
         enablePan={false}
@@ -222,12 +244,13 @@ export function Sawgrass17({
   showSplat = false,
   splatUrl,
   showProps = false,
+  post = false,
 }: Sawgrass17Props) {
   return (
     <Canvas
       dpr={[1, 2]}
       camera={{ fov: FOV, near: 0.5, far: 500, position: DEFAULT_CAMERA_POS.toArray() }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.25 }}
+      gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.25 }}
       shadows={{ type: THREE.PCFShadowMap }}
       style={{ background: "#0a0a0a", width: "100%", height: "100%" }}
     >
@@ -243,6 +266,7 @@ export function Sawgrass17({
         showSplat={showSplat}
         splatUrl={splatUrl}
         showProps={showProps}
+        post={post}
       />
     </Canvas>
   );
