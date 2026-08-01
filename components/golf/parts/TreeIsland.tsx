@@ -3,12 +3,13 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeTreeIslandShape, TREE_ISLAND_CENTER } from "@/lib/golf/geometry";
+import { PALETTE } from "@/lib/golf/palette";
 
 // TreeIsland -- small island east/south of green with large cypress.
 // Traced 2026-05-12 from satellite overlay.
 // Previous placeholder ellipse + 4 cone trees removed.
 
-const ISLAND_COLOR = "#1e3d22";
+const ISLAND_COLOR = PALETTE.turfRough;
 const TREE_COLOR   = "#172b1a";
 const ISLAND_Y     = 0.06;  // just above water
 

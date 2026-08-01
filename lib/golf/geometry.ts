@@ -57,7 +57,10 @@ const LAKE_POLY_WU: [number, number][] = [
   [ -8.32, 33.88],
   [ -7.73, 36.39],
   // --- South end (traced 2026-05-13) ---
-  [ -7.77, 36.07],
+  // NOTE: this session's first point ([-7.77, 36.07]) backtracked 0.32 past
+  // the previous session's last, making a 178 deg cusp. A cusp flips the
+  // local offset normal, so the shore ring folded a wedge into the lake.
+  // Removed 2026-08-01. Same story at the east-shore seam below.
   [ -7.59, 38.20],
   [ -7.55, 40.24],
   [ -6.94, 42.10],
@@ -85,7 +88,7 @@ const LAKE_POLY_WU: [number, number][] = [
   [ 22.91, 34.43],
   [ 22.18, 33.45],
   // --- East shore going north (traced 2026-05-12) ---
-  [ 22.72, 34.39],
+  // ([22.72, 34.39] removed 2026-08-01 -- 176 deg cusp, see note above.)
   [ 21.24, 32.16],
   [ 20.63, 27.52],
   [ 21.76, 23.53],

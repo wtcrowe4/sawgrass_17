@@ -10,7 +10,10 @@ import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 // is traced (per user 2026-05-13).
 
 const GRASS_Y      = 0.022;          // just above terrain
-const GRASS_COLOR  = PALETTE.turfApproach;  // approach collar -- one step lighter than the island rough
+// MUST match the island landmass and the terrain rough: the walkway, the
+// green's collar and the bank read as one continuous piece of land. Using a
+// separate ramp step here made the walkway a third shade of green.
+const GRASS_COLOR  = PALETTE.turfRough;
 
 export function GrassApproach() {
   const geo = useMemo(() => {
