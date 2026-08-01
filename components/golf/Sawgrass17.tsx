@@ -25,6 +25,7 @@ import { StandingCrowds } from "./parts/Crowd";
 import { TracerPlane } from "./parts/TracerPlane";
 import { Hole16 } from "./parts/Hole16";
 
+import { PALETTE } from "@/lib/golf/palette";
 import type { Shot } from "@/lib/golf/types";
 import type { PinPosition } from "@/lib/golf/geometry";
 
@@ -125,8 +126,8 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
   return (
     <>
       {/* Golden hour sky -- warm peach haze, fog fades terrain into it */}
-      <color attach="background" args={["#e0a878"]} />
-      <fog attach="fog" args={["#dba57e", 110, 320]} />
+      <color attach="background" args={[PALETTE.sky]} />
+      <fog attach="fog" args={[PALETTE.fog, 110, 320]} />
       <Lighting />
       {/* HDR environment -- sunset sky drives warm water reflections.
           Vendored locally: preset="sunset" fetches from a CDN at runtime

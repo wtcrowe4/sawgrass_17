@@ -3,13 +3,14 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeGrassApproachShape } from "@/lib/golf/geometry";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 
 // GrassApproach -- short-mown approach grass strip west of the green.
 // Replaces the old wooden walkway placeholder until proper geometry
 // is traced (per user 2026-05-13).
 
 const GRASS_Y      = 0.022;          // just above terrain
-const GRASS_COLOR  = "#2a5c38";      // matches green island landmass -- one continuous land piece
+const GRASS_COLOR  = PALETTE.turfApproach;  // approach collar -- one step lighter than the island rough
 
 export function GrassApproach() {
   const geo = useMemo(() => {
@@ -21,7 +22,7 @@ export function GrassApproach() {
   return (
     <group name="grass-approach">
       <mesh geometry={geo} position={[0, GRASS_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={GRASS_COLOR} roughness={0.88} metalness={0.0} />
+        <meshStandardMaterial color={GRASS_COLOR} roughness={ROUGHNESS.turf} metalness={0.0} />
       </mesh>
     </group>
   );

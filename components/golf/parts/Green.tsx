@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeGreenShape, makeGreenSurfaceShape } from "@/lib/golf/geometry";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 
 // Green -- two-layer island green.
 //
@@ -12,8 +13,8 @@ import { makeGreenShape, makeGreenSurfaceShape } from "@/lib/golf/geometry";
 // Flat on XZ plane, origin = front-center of green.
 
 const GREEN_Y       = 0.05;
-const LANDMASS_COLOR = "#2a5c38";  // darker collar/rough green
-const SURFACE_COLOR  = "#54a058";  // brightest -- shortest grass on the hole
+const LANDMASS_COLOR = PALETTE.turfRough;  // darker collar/rough green
+const SURFACE_COLOR  = PALETTE.turfGreen;  // brightest -- shortest grass on the hole
 
 export function Green() {
   const { landmassGeo, surfaceGeo } = useMemo(() => {
@@ -32,7 +33,7 @@ export function Green() {
       <mesh geometry={landmassGeo} position={[0, GREEN_Y - 0.005, 0]} receiveShadow>
         <meshStandardMaterial
           color={LANDMASS_COLOR}
-          roughness={0.92}
+          roughness={ROUGHNESS.turf}
           metalness={0.0}
         />
       </mesh>
@@ -41,7 +42,7 @@ export function Green() {
       <mesh geometry={surfaceGeo} position={[0, GREEN_Y, 0]} receiveShadow>
         <meshStandardMaterial
           color={SURFACE_COLOR}
-          roughness={0.72}
+          roughness={ROUGHNESS.green}
           metalness={0.0}
           emissive={SURFACE_COLOR}
           emissiveIntensity={0.04}

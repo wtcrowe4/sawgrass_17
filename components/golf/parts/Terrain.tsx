@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeTerrainShape } from "@/lib/golf/geometry";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 
 // Terrain -- large grass plane surrounding the lake.
 // Uses ShapeGeometry with the lake polygon punched out as a hole,
@@ -14,7 +15,7 @@ import { makeTerrainShape } from "@/lib/golf/geometry";
 // Color: dark rough/rough-cut grass matching TPC Sawgrass surroundings.
 
 const TERRAIN_Y    = 0.01;
-const ROUGH_COLOR  = "#2c5c31";  // Bermuda rough in Florida sun
+const ROUGH_COLOR  = PALETTE.turfRough;  // Bermuda rough in Florida sun
 const ROUGH_COLOR2 = "#336838";  // slightly lighter -- fairway areas
 
 export function Terrain() {
@@ -35,7 +36,7 @@ export function Terrain() {
       <mesh geometry={roughGeo} position={[0, TERRAIN_Y, 0]} receiveShadow>
         <meshStandardMaterial
           color={ROUGH_COLOR}
-          roughness={0.97}
+          roughness={ROUGHNESS.turf}
           metalness={0.0}
         />
       </mesh>

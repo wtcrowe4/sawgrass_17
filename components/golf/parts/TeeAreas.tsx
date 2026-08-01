@@ -8,13 +8,14 @@ import {
   PRO_TEE_CENTER,
 } from "@/lib/golf/geometry";
 import { Y2W } from "@/lib/golf/types";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 
 // TeeAreas -- light-green mown turf for the members tee complex
 // and the pro tournament tee box. Flat surfaces (no stone edge)
 // per user direction 2026-05-13.
 
 const TEE_GRASS_Y     = 0.025;
-const TEE_GRASS_COLOR = "#3f7d44";  // mown tee grass -- lighter than rough, less teal
+const TEE_GRASS_COLOR = PALETTE.turfFairway;  // mown tee grass -- lighter than rough
 
 const MARKER_R       = 0.13;
 const MARKER_SPACING = 0.55;
@@ -32,11 +33,11 @@ export function TeeAreas() {
   return (
     <group name="tee-areas">
       <mesh geometry={membersGeo} position={[0, TEE_GRASS_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={0.85} metalness={0.0} />
+        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={ROUGHNESS.turf} metalness={0.0} />
       </mesh>
 
       <mesh geometry={proGeo} position={[0, TEE_GRASS_Y + 0.005, 0]} receiveShadow>
-        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={ROUGHNESS.turf} metalness={0.0} />
       </mesh>
 
       <mesh
@@ -45,7 +46,7 @@ export function TeeAreas() {
       >
         <sphereGeometry args={[MARKER_R, 12, 12]} />
         <meshStandardMaterial
-          color="#fb923c"
+          color={PALETTE.accent}
           roughness={0.3}
           metalness={0.6}
           emissive="#fb923c"

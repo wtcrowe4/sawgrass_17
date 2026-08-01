@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeIslandBunkerShape } from "@/lib/golf/geometry";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 
 // IslandBunker -- greenside sand bunker on the island.
 // Radial-gradient texture sells the depression: darker shadowed center,
@@ -72,7 +73,7 @@ export function IslandBunker() {
     <mesh name="island-bunker" geometry={geo} position={[0, BUNKER_Y, 0]} receiveShadow>
       <meshStandardMaterial
         map={tex}
-        roughness={0.96}
+        roughness={ROUGHNESS.sand}
         metalness={0.0}
       />
     </mesh>

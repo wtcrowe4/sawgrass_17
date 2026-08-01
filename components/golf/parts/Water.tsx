@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { MeshReflectorMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { makeLakeShape } from "@/lib/golf/geometry";
+import { PALETTE } from "@/lib/golf/palette";
 
 // Water -- lake-shaped reflective surface + animated ripple normal +
 // caustic-like brightness overlay that rolls across the lake.
@@ -157,7 +158,7 @@ export function Water() {
           mixStrength={1.2}
           mixContrast={1.0}
           mirror={0.42}
-          color="#123f54"
+          color={PALETTE.waterDeep}
           roughness={0.2}
           metalness={0.0}
         />
@@ -167,7 +168,7 @@ export function Water() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y + 0.001, 0]}>
         <planeGeometry args={[60, 60]} />
         <meshStandardMaterial
-          color="#124256"
+          color={PALETTE.waterRipple}
           transparent
           opacity={0.28}
           roughness={0.5}
