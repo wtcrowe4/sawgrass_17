@@ -79,29 +79,37 @@ function useCinematicIntro(enabled: boolean) {
 }
 
 // --- Lighting -----------------------------------------------------------------
-// Golden hour -- low warm sun from the west (+x, screen-left), long shadows,
-// cool blue counter-fill from the east so shadow sides don't go black.
+// ONE light rig, matched to the HDRI. Measured 2026-08-01 by decoding
+// public/hdr/venice_sunset_1k.hdr and finding its peak-luminance texel:
+//   texel (614,246) of 1024x512 -> dir (0.587, 0.058, 0.807), elevation 3.3 deg,
+//   azimuth 36 deg.
+// We want the sun raking from the west (screen-left) across the lake, i.e.
+// azimuth 107 deg, so the environment is rotated +71.3 deg (1.244 rad) about Y
+// to bring its sun and its reflections onto the same bearing as the directional.
+// Elevation is the one deliberate deviation: the HDRI sun sits at 3.3 deg, which
+// throws shadows longer than the 100wu terrain. The directional is lifted to
+// ~12 deg so shadows stay on the map. Ambient and the old fill lights are gone --
+// the HDRI supplies all indirect now.
+const ENV_ROTATION_Y = 1.244;
+const SUN_POS = new THREE.Vector3(45, 10, -14); // azimuth 107 deg, elevation 12 deg
+
 function Lighting() {
   return (
-    <>
-      <ambientLight intensity={0.5} color="#ffe2c4" />
-      <directionalLight
-        position={[45, 10, -14]}
-        intensity={3.4}
-        color="#ffb36b"
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={160}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
-        shadow-bias={-0.0005}
-      />
-      <directionalLight position={[-30, 9, -35]} intensity={0.4} color="#6a86c8" castShadow={false} />
-      <directionalLight position={[0, 22, 25]} intensity={0.15} color="#ffd9b0" castShadow={false} />
-    </>
+    <directionalLight
+      position={SUN_POS}
+      intensity={2.7}
+      color="#ffb36b"
+      castShadow
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
+      shadow-camera-far={200}
+      shadow-camera-left={-55}
+      shadow-camera-right={55}
+      shadow-camera-top={55}
+      shadow-camera-bottom={-55}
+      shadow-bias={-0.0005}
+      shadow-normalBias={0.02}
+    />
   );
 }
 
@@ -132,17 +140,30 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       {/* HDR environment -- sunset sky drives warm water reflections.
           Vendored locally: preset="sunset" fetches from a CDN at runtime
           and intermittently fails (and would break offline/deploy). */}
-      <Environment files="/hdr/venice_sunset_1k.hdr" background={false} environmentIntensity={0.65} />
-      {/* Contact shadow patch under green for ground grounding */}
-      <ContactShadows
-        position={[2, 0.07, -5]}
-        scale={28}
-        opacity={0.55}
-        blur={2.4}
-        far={6}
-        resolution={512}
-        color="#0a1414"
+      <Environment
+        files="/hdr/venice_sunset_1k.hdr"
+        background={false}
+        environmentIntensity={1.15}
+        environmentRotation={[0, ENV_ROTATION_Y, 0]}
       />
+      {/* Contact shadow patch under green for ground grounding */}
+      {/* ContactShadows only with props. DEVIATION from the session plan's
+          "ContactShadows under all objects": its catcher plane sits above the
+          water line, so any patch big enough to cover the island also lays a
+          grey wash across the lake. The directional shadow map (normalBias
+          0.02) grounds the terrain correctly on its own. Stands and crowds on
+          grass genuinely benefit, so it comes back with them. */}
+      {showProps && (
+        <ContactShadows
+          position={[2, 0.07, -5]}
+          scale={30}
+          opacity={0.45}
+          blur={2.2}
+          far={6}
+          resolution={1024}
+          color="#0a1414"
+        />
+      )}
       <Terrain />
       <Shoreline />
       <TreeIsland showTree={showProps} />
