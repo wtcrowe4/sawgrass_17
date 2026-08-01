@@ -15,7 +15,11 @@ import { PALETTE } from "@/lib/golf/palette";
 //   2. Animated 3-octave ripple normal map on full plane
 //   3. Caustic shimmer overlay (additive bright bands)
 
-const WATER_Y = -0.02;
+// Water sits ~2.2 ft below the bulkhead caps (1 wu = 3.05 m ~ 10 ft).
+// It used to be -0.02, leaving only 2.4 INCHES of timber above the surface,
+// which is why the bulkhead read as a thin brown line instead of a wall.
+// The walls extrude 0.5 wu (5 ft) down, so they stay submerged at this level.
+const WATER_Y = -0.22;
 
 function useRippleTexture(): React.MutableRefObject<THREE.CanvasTexture | null> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

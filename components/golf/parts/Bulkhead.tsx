@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
-import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape, offsetPolygon } from "@/lib/golf/geometry";
+import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape, makeTreeIslandShape, offsetPolygon } from "@/lib/golf/geometry";
 
 // Bulkhead -- wooden retaining walls around all land/water boundaries.
 //
@@ -18,6 +18,17 @@ const BULKHEAD_HEIGHT = 0.5;
 const BULKHEAD_SCALE  = 1.04;
 const LAKE_WALL_WIDTH = 0.35;  // wu -- thin sliver at shore edge
 const WALKWAY_WALL_WIDTH = 0.34; // wu -- rim proud of the walkway edge
+const ISLAND_WALL_WIDTH  = 0.30; // wu -- rim proud of the tree island
+
+// Wall cap heights. ExtrudeGeometry includes a TOP FACE, so each cap must sit
+// just BELOW the surface it retains -- level with it and the timber cap covers
+// the grass (setting CAP_TREE above the mound buried the whole tree island).
+// The land mesh hides the inner cap; only the rim outside it shows, which is
+// exactly the bulkhead edge you see from above.
+const CAP_GREEN   = 0.042; // island landmass 0.045, green surface 0.05
+const CAP_WALKWAY = 0.018; // GrassApproach mesh 0.022
+const CAP_LAKE    = 0.006; // terrain 0.01, shore ring 0.014
+const CAP_TREE    = 0.050; // TreeIsland mound 0.06
 // Weathered timber -- the real island is edged with dark wooden plank walls
 const TIMBER_COLOR    = "#6a5340";
 const TIMBER_DARK     = "#4a3a2c";
@@ -59,7 +70,7 @@ function buildPlankTexture(): THREE.CanvasTexture | null {
 
 export function Bulkhead() {
   const plankTex = useMemo(() => buildPlankTexture(), []);
-  const { outerGeo, innerGeo, lakeGeo, approachGeo } = useMemo(() => {
+  const { outerGeo, innerGeo, lakeGeo, approachGeo, treeGeo } = useMemo(() => {
     const extSettings: THREE.ExtrudeGeometryOptions = {
       depth: BULKHEAD_HEIGHT,
       bevelEnabled: false,
@@ -76,11 +87,11 @@ export function Bulkhead() {
 
     const outerGeo = new THREE.ExtrudeGeometry(outerShape, extSettings);
     outerGeo.rotateX(-Math.PI / 2);
-    outerGeo.translate(0, -BULKHEAD_HEIGHT, 0);
+    outerGeo.translate(0, CAP_GREEN - BULKHEAD_HEIGHT, 0);
 
     const innerGeo = new THREE.ExtrudeGeometry(greenShape, extSettings);
     innerGeo.rotateX(-Math.PI / 2);
-    innerGeo.translate(0, -BULKHEAD_HEIGHT, 0);
+    innerGeo.translate(0, CAP_GREEN - BULKHEAD_HEIGHT, 0);
 
     // 2. Lake perimeter -- ring shape to avoid cap filling whole lake
     const lakePts = getLakeOutlinePoints();
@@ -100,7 +111,7 @@ export function Bulkhead() {
 
     const lakeGeo = new THREE.ExtrudeGeometry(lakeRingShape, extSettings);
     lakeGeo.rotateX(-Math.PI / 2);
-    lakeGeo.translate(0, -BULKHEAD_HEIGHT, 0);
+    lakeGeo.translate(0, CAP_LAKE - BULKHEAD_HEIGHT, 0);
 
     // 3. Walkway to the green.
     // Was extruded from the approach outline ITSELF, so its cap sat exactly
@@ -113,9 +124,17 @@ export function Bulkhead() {
     const approachOuter = new THREE.Shape(offsetPolygon(approachPts, WALKWAY_WALL_WIDTH));
     const approachGeo = new THREE.ExtrudeGeometry(approachOuter, extSettings);
     approachGeo.rotateX(-Math.PI / 2);
-    approachGeo.translate(0, -BULKHEAD_HEIGHT, 0);
+    approachGeo.translate(0, CAP_WALKWAY - BULKHEAD_HEIGHT, 0);
 
-    return { outerGeo, innerGeo, lakeGeo, approachGeo };
+    // 4. Tree island -- same timber wall as the green. Without it the mound
+    // floats once the water drops, showing daylight underneath.
+    const treePts = makeTreeIslandShape().getPoints(96);
+    const treeOuter = new THREE.Shape(offsetPolygon(treePts, ISLAND_WALL_WIDTH));
+    const treeGeo = new THREE.ExtrudeGeometry(treeOuter, extSettings);
+    treeGeo.rotateX(-Math.PI / 2);
+    treeGeo.translate(0, CAP_TREE - BULKHEAD_HEIGHT, 0);
+
+    return { outerGeo, innerGeo, lakeGeo, approachGeo, treeGeo };
   }, []);
 
   return (
@@ -142,6 +161,15 @@ export function Bulkhead() {
         />
       </mesh>
       <mesh geometry={approachGeo} castShadow receiveShadow>
+        <meshStandardMaterial
+          color={plankTex ? "#ffffff" : TIMBER_COLOR}
+          map={plankTex ?? undefined}
+          roughness={0.94}
+          metalness={0.02}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh geometry={treeGeo} castShadow receiveShadow>
         <meshStandardMaterial
           color={plankTex ? "#ffffff" : TIMBER_COLOR}
           map={plankTex ?? undefined}
