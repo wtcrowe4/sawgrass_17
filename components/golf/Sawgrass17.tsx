@@ -40,6 +40,10 @@ export interface Sawgrass17Props {
   intro?: boolean;
   showSplat?: boolean;
   splatUrl?: string;
+  /** Tournament dressing (stands, crowds, treeline, island oak, hole 16).
+   *  Default OFF -- terrain/lighting work happens on a clean scene.
+   *  Nothing is deleted; flip this on to check prop scale. */
+  showProps?: boolean;
 }
 
 // --- Camera config ------------------------------------------------------------
@@ -112,9 +116,10 @@ interface SceneProps {
   intro: boolean;
   showSplat?: boolean;
   splatUrl?: string;
+  showProps: boolean;
 }
 
-function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl }: SceneProps) {
+function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps }: SceneProps) {
   useCinematicIntro(intro);
 
   return (
@@ -139,7 +144,7 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       />
       <Terrain />
       <Shoreline />
-      <TreeIsland />
+      <TreeIsland showTree={showProps} />
       <Water />
       <Green />
       <Bulkhead />
@@ -148,10 +153,14 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       <CartPath />
       <TeeAreas />
       <Pin pin={pin} />
-      <Hole16 />
-      <Trees />
-      <Grandstands />
-      <StandingCrowds />
+      {showProps && (
+        <>
+          <Hole16 />
+          <Trees />
+          <Grandstands />
+          <StandingCrowds />
+        </>
+      )}
       {showSplat && splatUrl && (
         <GaussianSplat
           url={splatUrl}
@@ -190,6 +199,7 @@ export function Sawgrass17({
   intro = true,
   showSplat = false,
   splatUrl,
+  showProps = false,
 }: Sawgrass17Props) {
   return (
     <Canvas
@@ -210,6 +220,7 @@ export function Sawgrass17({
         intro={intro}
         showSplat={showSplat}
         splatUrl={splatUrl}
+        showProps={showProps}
       />
     </Canvas>
   );

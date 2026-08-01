@@ -1,0 +1,7 @@
+reviews:
+  profile: chill
+  auto_review:
+    enabled: true
+path_instructions:
+  - path: "**/*.tsx"
+    instructions: "R3F scene: flag geometry/material creation inside render or useFrame, missing dispose, missing useMemo on geometries/materials, and per-frame allocations."
