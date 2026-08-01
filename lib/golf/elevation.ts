@@ -70,6 +70,10 @@ const MOUNDS: Mound[] = [
 const SHORE_FLAT = 2.5;
 const SHORE_RAMP = 6.0;
 
+/** Elevation is forced flat beyond this Chebyshev radius (wu). Must sit
+ *  inside Terrain's GRID_EXTENT so the flat skirt joins seamlessly. */
+export const GRID_FADE_END = 64;
+
 /** Smoothstep 0..1. */
 function smooth(t: number): number {
   const c = Math.max(0, Math.min(1, t));
@@ -102,5 +106,10 @@ export function heightAt(wx: number, wz: number): number {
   // Gentle long-wavelength roll so the outfield is not a billiard table.
   h += 0.18 * Math.sin(wx * 0.045) * Math.cos(wz * 0.038);
 
-  return h * shoreGate;
+  // Fade to flat before the detail grid ends, so the coarse outer skirt
+  // (which is flat by construction) joins it with no step.
+  const far = Math.max(Math.abs(wx), Math.abs(wz));
+  const outerGate = smooth((GRID_FADE_END - far) / 6);
+
+  return h * shoreGate * outerGate;
 }
