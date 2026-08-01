@@ -6,6 +6,7 @@ import { MeshReflectorMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { makeLakeShape } from "@/lib/golf/geometry";
 import { PALETTE } from "@/lib/golf/palette";
+import { WATER_Y } from "@/lib/golf/types";
 
 // Water -- lake-shaped reflective surface + animated ripple normal +
 // caustic-like brightness overlay that rolls across the lake.
@@ -15,11 +16,8 @@ import { PALETTE } from "@/lib/golf/palette";
 //   2. Animated 3-octave ripple normal map on full plane
 //   3. Caustic shimmer overlay (additive bright bands)
 
-// Water sits ~2.2 ft below the bulkhead caps (1 wu = 3.05 m ~ 10 ft).
-// It used to be -0.02, leaving only 2.4 INCHES of timber above the surface,
-// which is why the bulkhead read as a thin brown line instead of a wall.
-// The walls extrude 0.5 wu (5 ft) down, so they stay submerged at this level.
-const WATER_Y = -0.22;
+// WATER_Y lives in lib/golf/types.ts -- Bulkhead needs it too, to align the
+// texture's baked waterline stain with the actual surface.
 
 function useRippleTexture(): React.MutableRefObject<THREE.CanvasTexture | null> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

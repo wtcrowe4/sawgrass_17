@@ -1,179 +1,238 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
-import { makeGreenShape, getLakeOutlinePoints, makeGrassApproachShape, makeTreeIslandShape, offsetPolygon } from "@/lib/golf/geometry";
+import {
+  makeGreenShape,
+  getLakeOutlinePoints,
+  makeGrassApproachShape,
+  makeTreeIslandShape,
+  offsetPolygon,
+} from "@/lib/golf/geometry";
+import { WATER_Y } from "@/lib/golf/types";
 
-// Bulkhead -- wooden retaining walls around all land/water boundaries.
+// Bulkhead -- timber retaining walls around every land/water boundary.
 //
-// Three wall rings:
-//   1. Green island  -- scaled-out outer face + back-side inner cap
-//   2. Lake perimeter -- thin ring shape (outer=lake outline, inner=contracted)
-//      Ring prevents the extrusion cap from filling the entire lake.
-//   3. Grass approach -- edges facing water, cap covered by GrassApproach mesh
+// Rebuilt 2026-08-01 from ExtrudeGeometry to explicit quad strips. Extrude gave
+// no control over either problem we had:
+//   - UVs. Its side-wall generator derives UVs from world position, so plank
+//     width varied with where a wall happened to sit and could not be dialled
+//     in. Strips let U be CUMULATIVE ARC LENGTH, so PLANK_TILE_WU is literally
+//     "world units per texture repeat" and plank width is a number you set.
+//   - Width. Extrude's top cap was doing the visual work, which is why the rim
+//     read wide. Now the cap is an explicit board of CAP_BOARD_WU.
 //
-// All extruded downward 0.5 wu, warm concrete/timber tone.
+// V is mapped from world Y so the texture's BAKED WATERLINE STAIN lands on the
+// real surface: WATER_Y -> v=0.15 (top of the stain), cap -> v=1.
+//
+// Texture is public/textures/bulkhead/bulkhead-tile.jpg (Nano Banana, albedo
+// only, horizontally tileable). The normal map is derived from its luminance
+// at load -- no second asset, and it is what makes individual planks catch the
+// low sun.
 
-const BULKHEAD_HEIGHT = 0.5;
-const BULKHEAD_SCALE  = 1.04;
-const LAKE_WALL_WIDTH = 0.35;  // wu -- thin sliver at shore edge
-const WALKWAY_WALL_WIDTH = 0.34; // wu -- rim proud of the walkway edge
-const ISLAND_WALL_WIDTH  = 0.30; // wu -- rim proud of the tree island
+const WALL_DEPTH    = 0.5;   // wu -- how far the wall drops below its cap
+const WALL_OFFSET   = 0.14;  // wu -- wall face outboard of the land outline
+const CAP_BOARD_WU  = 0.14;  // wu -- width of the horizontal coping board
+const PLANK_TILE_WU = 1.6;   // wu of shoreline per texture repeat (~16 planks)
+const STAIN_V       = 0.15;  // v of the waterline stain's top edge in the image
 
-// Wall cap heights. ExtrudeGeometry includes a TOP FACE, so each cap must sit
-// just BELOW the surface it retains -- level with it and the timber cap covers
-// the grass (setting CAP_TREE above the mound buried the whole tree island).
-// The land mesh hides the inner cap; only the rim outside it shows, which is
-// exactly the bulkhead edge you see from above.
+const TIMBER_COLOR = "#6a5340"; // fallback before the texture resolves
+
+// Cap heights sit just BELOW the surface each wall retains, so the land mesh
+// hides the inner edge of the coping board and only the outer rim shows.
 const CAP_GREEN   = 0.042; // island landmass 0.045, green surface 0.05
-const CAP_WALKWAY = 0.018; // GrassApproach mesh 0.022
+const CAP_WALKWAY = 0.018; // GrassApproach 0.022
 const CAP_LAKE    = 0.006; // terrain 0.01, shore ring 0.014
 const CAP_TREE    = 0.050; // TreeIsland mound 0.06
-// Weathered timber -- the real island is edged with dark wooden plank walls
-const TIMBER_COLOR    = "#6a5340";
-const TIMBER_DARK     = "#4a3a2c";
 
-// Vertical plank texture: plank-width hue jitter + dark seam lines.
-// ExtrudeGeometry side faces map u along the contour, so RepeatWrapping
-// with a high repeat.x wraps planks around the wall perimeter.
-function buildPlankTexture(): THREE.CanvasTexture | null {
-  if (typeof document === "undefined") return null;
-  const w = 128;
-  const h = 64;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const plankW = 8;
-  for (let x = 0; x < w; x += plankW) {
-    const jitter = (Math.sin(x * 12.9898) * 43758.5453) % 1; // deterministic
-    const v = Math.abs(jitter) * 30 - 15;
-    ctx.fillStyle = `rgb(${106 + v}, ${83 + v * 0.8}, ${64 + v * 0.6})`;
-    ctx.fillRect(x, 0, plankW, h);
-    ctx.fillStyle = "rgba(30, 22, 16, 0.85)";
-    ctx.fillRect(x, 0, 1, h);
+/** Map a world Y to texture V so the baked stain sits at the waterline. */
+function vAt(y: number, capY: number): number {
+  return STAIN_V + ((y - WATER_Y) / (capY - WATER_Y)) * (1 - STAIN_V);
+}
+
+interface Strip {
+  pos: number[];
+  uv: number[];
+}
+
+/**
+ * Vertical wall + horizontal coping board along a closed outline.
+ * `wallOn` picks which edge carries the wall: islands are retained from the
+ * outside (wall on the offset line), the lake bank from the inside (wall on the
+ * outline itself, at the water's edge).
+ */
+function buildWall(
+  pts: THREE.Vector2[],
+  capY: number,
+  wallOn: "outer" | "inner"
+): Strip {
+  const outer = offsetPolygon(pts, WALL_OFFSET);
+  const cap = offsetPolygon(pts, wallOn === "outer" ? CAP_BOARD_WU : -CAP_BOARD_WU);
+  const wallLine = wallOn === "outer" ? outer : pts;
+  const capA = wallOn === "outer" ? pts : pts;
+  const capB = wallOn === "outer" ? outer : cap;
+
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const n = pts.length;
+  const bottom = capY - WALL_DEPTH;
+  const vBot = vAt(bottom, capY);
+  const vTop = vAt(capY, capY);
+
+  let arc = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const a = wallLine[i];
+    const b = wallLine[j];
+    const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+    const u0 = arc / PLANK_TILE_WU;
+    const u1 = (arc + segLen) / PLANK_TILE_WU;
+    arc += segLen;
+
+    // shape space -> world: (sx, y, -sy)
+    // wall quad: a-top, b-top, b-bottom, a-bottom
+    const q = [
+      [a.x, capY, -a.y, u0, vTop],
+      [b.x, capY, -b.y, u1, vTop],
+      [b.x, bottom, -b.y, u1, vBot],
+      [a.x, bottom, -a.y, u0, vBot],
+    ];
+    for (const [p, r, s] of [[0, 1, 2], [0, 2, 3]]) {
+      for (const k of [p, r, s]) {
+        pos.push(q[k][0], q[k][1], q[k][2]);
+        uv.push(q[k][3], q[k][4]);
+      }
+    }
+
+    // coping board -- flat, spans the wall face to the land edge
+    const ca = capA[i], cb = capA[j];
+    const oa = capB[i], ob = capB[j];
+    const c = [
+      [ca.x, capY, -ca.y, u0, 0.97],
+      [cb.x, capY, -cb.y, u1, 0.97],
+      [ob.x, capY, -ob.y, u1, 1.0],
+      [oa.x, capY, -oa.y, u0, 1.0],
+    ];
+    for (const [p, r, s] of [[0, 2, 1], [0, 3, 2]]) {
+      for (const k of [p, r, s]) {
+        pos.push(c[k][0], c[k][1], c[k][2]);
+        uv.push(c[k][3], c[k][4]);
+      }
+    }
   }
-  // Horizontal waterline stain across the lower third
-  const grad = ctx.createLinearGradient(0, h * 0.6, 0, h);
-  grad.addColorStop(0, "rgba(25, 20, 15, 0)");
-  grad.addColorStop(1, "rgba(25, 20, 15, 0.55)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, h * 0.6, w, h * 0.4);
+  return { pos, uv };
+}
 
-  const tex = new THREE.CanvasTexture(c);
+function toGeometry(strips: Strip[]): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  for (const s of strips) {
+    pos.push(...s.pos);
+    uv.push(...s.uv);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Sobel a luminance map out of the albedo to fake a normal map. */
+function deriveNormalMap(img: HTMLImageElement, strength = 3.0): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const src = document.createElement("canvas");
+  src.width = w;
+  src.height = h;
+  const sctx = src.getContext("2d");
+  if (!sctx) return null;
+  sctx.drawImage(img, 0, 0);
+  const data = sctx.getImageData(0, 0, w, h).data;
+
+  const lum = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    lum[i] = (0.2126 * data[i * 4] + 0.7152 * data[i * 4 + 1] + 0.0722 * data[i * 4 + 2]) / 255;
+  }
+  const out = document.createElement("canvas");
+  out.width = w;
+  out.height = h;
+  const octx = out.getContext("2d");
+  if (!octx) return null;
+  const dst = octx.createImageData(w, h);
+  const at = (x: number, y: number) =>
+    lum[((y + h) % h) * w + ((x + w) % w)];
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx =
+        at(x - 1, y - 1) + 2 * at(x - 1, y) + at(x - 1, y + 1) -
+        at(x + 1, y - 1) - 2 * at(x + 1, y) - at(x + 1, y + 1);
+      const dy =
+        at(x - 1, y - 1) + 2 * at(x, y - 1) + at(x + 1, y - 1) -
+        at(x - 1, y + 1) - 2 * at(x, y + 1) - at(x + 1, y + 1);
+      let nx = -dx * strength;
+      let ny = -dy * strength;
+      const nz = 1;
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nx /= len;
+      ny /= len;
+      const i = (y * w + x) * 4;
+      dst.data[i] = (nx * 0.5 + 0.5) * 255;
+      dst.data[i + 1] = (ny * 0.5 + 0.5) * 255;
+      dst.data[i + 2] = (nz / len) * 255;
+      dst.data[i + 3] = 255;
+    }
+  }
+  octx.putImageData(dst, 0, 0);
+  const tex = new THREE.CanvasTexture(out);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(30, 1);
-  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
 export function Bulkhead() {
-  const plankTex = useMemo(() => buildPlankTexture(), []);
-  const { outerGeo, innerGeo, lakeGeo, approachGeo, treeGeo } = useMemo(() => {
-    const extSettings: THREE.ExtrudeGeometryOptions = {
-      depth: BULKHEAD_HEIGHT,
-      bevelEnabled: false,
+  const [maps, setMaps] = useState<{ map: THREE.Texture; normalMap: THREE.Texture | null } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const loader = new THREE.TextureLoader();
+    loader.load("/textures/bulkhead/bulkhead-tile.jpg", (tex) => {
+      if (!alive) return;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      const img = tex.image as HTMLImageElement;
+      setMaps({ map: tex, normalMap: img ? deriveNormalMap(img) : null });
+    });
+    return () => {
+      alive = false;
     };
-
-    // 1. Green island
-    const greenShape = makeGreenShape();
-    const outerVerts = makeGreenShape().getPoints(64);
-    outerVerts.forEach((p: THREE.Vector2) => {
-      p.x *= BULKHEAD_SCALE;
-      p.y *= BULKHEAD_SCALE;
-    });
-    const outerShape = new THREE.Shape(outerVerts);
-
-    const outerGeo = new THREE.ExtrudeGeometry(outerShape, extSettings);
-    outerGeo.rotateX(-Math.PI / 2);
-    outerGeo.translate(0, CAP_GREEN - BULKHEAD_HEIGHT, 0);
-
-    const innerGeo = new THREE.ExtrudeGeometry(greenShape, extSettings);
-    innerGeo.rotateX(-Math.PI / 2);
-    innerGeo.translate(0, CAP_GREEN - BULKHEAD_HEIGHT, 0);
-
-    // 2. Lake perimeter -- ring shape to avoid cap filling whole lake
-    const lakePts = getLakeOutlinePoints();
-    const cx = lakePts.reduce((s, p) => s + p.x, 0) / lakePts.length;
-    const cy = lakePts.reduce((s, p) => s + p.y, 0) / lakePts.length;
-    const innerLakePts = lakePts.map((p) => {
-      const dx = cx - p.x;
-      const dy = cy - p.y;
-      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      return new THREE.Vector2(
-        p.x + (dx / len) * LAKE_WALL_WIDTH,
-        p.y + (dy / len) * LAKE_WALL_WIDTH
-      );
-    });
-    const lakeRingShape = new THREE.Shape(lakePts);
-    lakeRingShape.holes.push(new THREE.Path([...innerLakePts].reverse()));
-
-    const lakeGeo = new THREE.ExtrudeGeometry(lakeRingShape, extSettings);
-    lakeGeo.rotateX(-Math.PI / 2);
-    lakeGeo.translate(0, CAP_LAKE - BULKHEAD_HEIGHT, 0);
-
-    // 3. Walkway to the green.
-    // Was extruded from the approach outline ITSELF, so its cap sat exactly
-    // under the GrassApproach mesh and only ~0.02wu of wall cleared the water
-    // -- invisible from every angle. The green island reads because its wall is
-    // scaled 4% out, leaving a visible rim. Same idea here, but offset by a
-    // fixed distance instead of scaled: the walkway is far off-origin, so a
-    // scalar multiply would translate it rather than widen it.
-    const approachPts = makeGrassApproachShape().getPoints(96);
-    const approachOuter = new THREE.Shape(offsetPolygon(approachPts, WALKWAY_WALL_WIDTH));
-    const approachGeo = new THREE.ExtrudeGeometry(approachOuter, extSettings);
-    approachGeo.rotateX(-Math.PI / 2);
-    approachGeo.translate(0, CAP_WALKWAY - BULKHEAD_HEIGHT, 0);
-
-    // 4. Tree island -- same timber wall as the green. Without it the mound
-    // floats once the water drops, showing daylight underneath.
-    const treePts = makeTreeIslandShape().getPoints(96);
-    const treeOuter = new THREE.Shape(offsetPolygon(treePts, ISLAND_WALL_WIDTH));
-    const treeGeo = new THREE.ExtrudeGeometry(treeOuter, extSettings);
-    treeGeo.rotateX(-Math.PI / 2);
-    treeGeo.translate(0, CAP_TREE - BULKHEAD_HEIGHT, 0);
-
-    return { outerGeo, innerGeo, lakeGeo, approachGeo, treeGeo };
   }, []);
+
+  const geo = useMemo(() => {
+    const green = makeGreenShape().getPoints(200);
+    const walkway = makeGrassApproachShape().getPoints(96);
+    const tree = makeTreeIslandShape().getPoints(96);
+    const lake = getLakeOutlinePoints();
+    return toGeometry([
+      buildWall(green, CAP_GREEN, "outer"),
+      buildWall(walkway, CAP_WALKWAY, "outer"),
+      buildWall(tree, CAP_TREE, "outer"),
+      buildWall(lake, CAP_LAKE, "inner"),
+    ]);
+  }, []);
+
+  useEffect(() => () => geo.dispose(), [geo]);
 
   return (
     <group name="bulkhead">
-      <mesh geometry={outerGeo} castShadow receiveShadow>
+      <mesh geometry={geo} castShadow receiveShadow>
         <meshStandardMaterial
-          color={plankTex ? "#ffffff" : TIMBER_COLOR}
-          map={plankTex ?? undefined}
-          roughness={0.94}
-          metalness={0.02}
-          side={THREE.FrontSide}
-        />
-      </mesh>
-      <mesh geometry={innerGeo} castShadow receiveShadow>
-        <meshStandardMaterial color={TIMBER_DARK} roughness={0.97} metalness={0.01} side={THREE.BackSide} />
-      </mesh>
-      <mesh geometry={lakeGeo} castShadow receiveShadow>
-        <meshStandardMaterial
-          color={plankTex ? "#ffffff" : TIMBER_COLOR}
-          map={plankTex ?? undefined}
-          roughness={0.94}
-          metalness={0.02}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh geometry={approachGeo} castShadow receiveShadow>
-        <meshStandardMaterial
-          color={plankTex ? "#ffffff" : TIMBER_COLOR}
-          map={plankTex ?? undefined}
-          roughness={0.94}
-          metalness={0.02}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh geometry={treeGeo} castShadow receiveShadow>
-        <meshStandardMaterial
-          color={plankTex ? "#ffffff" : TIMBER_COLOR}
-          map={plankTex ?? undefined}
-          roughness={0.94}
+          color={maps ? "#ffffff" : TIMBER_COLOR}
+          map={maps?.map ?? undefined}
+          normalMap={maps?.normalMap ?? undefined}
+          normalScale={new THREE.Vector2(0.8, 0.8)}
+          roughness={0.92}
           metalness={0.02}
           side={THREE.DoubleSide}
         />

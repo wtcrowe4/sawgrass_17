@@ -51,3 +51,8 @@ export const OUTCOME_COLOR: Record<ShotOutcome, string> = {
 // ─── World-unit conversion ────────────────────────────────────────────────────
 /** 1 yard = 0.3 R3F world units */
 export const Y2W = 0.3 as const;
+
+// ─── Water surface elevation (wu) ─────────────────────────────────────────────
+/** Lake surface. ~2.2 ft below the bulkhead caps (1 wu = 3.05 m ~ 10 ft).
+ *  Bulkhead uses this to place the texture's baked waterline stain. */
+export const WATER_Y = -0.22 as const;
