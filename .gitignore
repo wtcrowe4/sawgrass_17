@@ -52,3 +52,6 @@ yarn-error.log*
 
 # ---- Vercel (if deployed later) ----
 .vercel/
+
+# ---- Windows download markers (alternate data streams) ----
+*:Zone.Identifier

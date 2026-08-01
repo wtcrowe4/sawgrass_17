@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sawgrass17 } from "./Sawgrass17";
 import { REAL_SHOTS_2025 } from "@/data/real-shots-2025";
 import type { Shot } from "@/lib/golf/types";
@@ -46,7 +46,17 @@ export function Sawgrass17Client() {
   const [traceTarget, setTraceTarget] = useState<TraceTarget>("lake");
   const [points, setPoints]           = useState<[number, number][]>([]); // [world.x, world.z]
   const [showSplat, setShowSplat]     = useState(false);
+  const [showProps, setShowProps]     = useState(false); // tournament dressing -- off while terrain is being built
   const [splatUrl, setSplatUrl]       = useState("https://antimatter15.com/splat/train.splat");
+
+  // ?nointro=1 -- skip the cinematic camera sweep. Headless screenshots
+  // fast-forward virtual time, which never advances useFrame deltas, so the
+  // intro would otherwise freeze the camera at its start position.
+  // Set in an effect (not during render) to keep SSR/client markup identical.
+  const [noIntro, setNoIntro] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("nointro")) setNoIntro(true);
+  }, []);
 
   const handleHover = useCallback((shot: Shot | null) => setHoveredShot(shot), []);
 
@@ -70,9 +80,10 @@ export function Sawgrass17Client() {
         satRotation={satRot}
         traceMode={traceMode}
         onTracePoint={handleTracePoint}
-        intro={!traceMode}
+        intro={!traceMode && !noIntro}
         showSplat={showSplat}
         splatUrl={splatUrl}
+        showProps={showProps}
       />
 
       {/* top-left: hole info */}
@@ -130,6 +141,18 @@ export function Sawgrass17Client() {
             padding: "5px 10px", cursor: "pointer", letterSpacing: "0.06em",
           }}
         >TRACE</button>
+
+        {/* PROPS toggle -- stands, crowds, treeline, island oak, hole 16 */}
+        <button
+          onClick={() => setShowProps((v) => !v)}
+          style={{
+            background: showProps ? "rgba(52,211,153,0.16)" : "rgba(10,10,10,0.75)",
+            border: `1px solid ${showProps ? "#34d399" : "rgba(255,255,255,0.15)"}`,
+            borderRadius: 6, color: showProps ? "#34d399" : "rgba(250,250,250,0.5)",
+            fontFamily: "ui-monospace, monospace", fontSize: 11,
+            padding: "5px 10px", cursor: "pointer", letterSpacing: "0.06em",
+          }}
+        >PROPS</button>
 
         {/* SPLAT toggle */}
         <button
