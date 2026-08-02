@@ -57,3 +57,16 @@ yarn-error.log*
 
 # ---- Windows download markers (alternate data streams) ----
 *:Zone.Identifier
+
+# ---- Secrets -- this repo is PUBLIC on GitHub ----
+# The Buzz nostr key deliberately lives OUTSIDE the repo at
+# ~/.config/buzz/nostr.nsec (0600), referenced by `git config --local
+# nostr.keyfile`, which lives in .git/config and is never committed.
+# These patterns are belt-and-braces in case a key is ever dropped in here.
+*.nsec
+*.key
+*.pem
+*_rsa
+*_ed25519
+BUZZ-KEYS*
+nostr*.txt
