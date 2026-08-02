@@ -168,9 +168,10 @@ grandstands, crowds, treeline, island oak and Hole16 are behind the toggle.
 the lake edge is made of). Terrain is ring + uniform grid + skirt; the grid
 carries world-space UVs, so a tiling turf texture is now possible.
 
-**Pending:** turf albedo/normal on the new UVs; decide on USGS 3DEP vs synthetic
-mounds; Higgsfield prop pipeline (Prop component + palette clamp + vendored
-Draco); postprocessing is wired but off (breaks MeshReflectorMaterial).
+**Next up:** see the ordered realism roadmap in HANDOFF.md. Tier 1 is turf
+albedo/normal on the new UVs, mowing stripes, and a water depth gradient --
+everything in the scene is flat untextured colour right now, which is the
+single biggest gap.
 
 ## Reference photos
 

@@ -101,22 +101,61 @@ frame loop pins ~8 cores until killed.
 
 ---
 
-## Open decisions / next steps
+## Realism roadmap -- ordered by payoff per unit effort
 
-1. **Terrain material.** The grid now carries world-space UVs, which is what was
-   blocking a tiling turf albedo + normal. This is the highest-value remaining
-   realism step and it is unblocked. `ShapeGeometry` UVs never worked for this.
-2. **Elevation source.** Synthetic mounds are in and look right. The user wanted
-   to see them before committing to real DEM work. Decision still open; see the
-   flatten-corridor constraint above.
-3. **Higgsfield props.** The plan is to generate props (grandstand, spectators,
-   flag, trees) rather than model them. `Prop` component + palette-clamping
-   material override are NOT built yet. Draco decoder must be vendored to
-   `public/draco/` -- drei defaults to a CDN, and a CDN fetch already broke the
-   scene once this project (hence `public/hdr/venice_sunset_1k.hdr`).
-4. **Postprocessing** is installed and wired but off. `EffectComposer` takes over
-   the render target and breaks `MeshReflectorMaterial`, flattening the lake to
-   grey. Revisit if water moves to a custom shader. `POST_FX` in the client.
+Everything in the scene is currently **flat untextured colour**. That single
+fact is the biggest gap between this and a broadcast frame, and it is why the
+list starts where it does.
+
+### Tier 1 -- do these first
+
+1. **Turf albedo + normal on the terrain grid.** UNBLOCKED as of this session:
+   the grid carries world-space UVs (`UV_TILE = 6.0` wu per repeat).
+   `ShapeGeometry` never gave usable UVs, which is why this waited. Biggest
+   single visual win available.
+2. **Mowing stripes.** The strongest "this is a golf broadcast" cue there is,
+   and it is nearly free -- a directional stripe factor in the shader or a
+   second UV channel. Green gets a tight cross-cut, fairway/tee a wider stripe,
+   rough none. Do it with (1); same material work.
+3. **Water depth gradient.** The lake is one flat blue. Real water shallows to
+   olive/tan at the bank. Sample distance-to-shore (`lakeEdgeDistance` already
+   exists) and blend `waterShallow` -> `waterDeep`. Also add fresnel so grazing
+   angles go reflective and overhead goes transparent.
+
+### Tier 2 -- clear wins, more work
+
+4. **Green surface contours.** The real 17 green is tiered -- back-left shelf,
+   front-right runoff into the bunker. Currently perfectly flat, which reads as
+   a putting mat. Needs its own small height function; `heightAt` is terrain-only
+   and forced to 0 over the island.
+5. **Bunker sand.** Flat cream at the moment. Wants a sand normal map, a darker
+   lip, and rake lines. Small mesh, high per-pixel payoff on close shots.
+6. **Higgsfield prop pipeline.** `Prop` component (useGLTF + Draco + shadow
+   flags) and the palette-clamping material override. Generated props must be
+   forced into the scene palette or they read as pasted-in stickers.
+   **Vendor the Draco decoder to `public/draco/`** -- drei defaults to a CDN and
+   a CDN fetch has already broken this scene once (hence the local HDR).
+
+### Tier 3 -- polish / open questions
+
+7. **Elevation source.** Synthetic mounds are in and look right. Real USGS 3DEP
+   is the accurate path, but the cost is not sampling -- it is that the cart
+   path and tee pads are fixed-height flat meshes and need explicit flatten
+   corridors. Decide only if the mounds start looking wrong.
+8. **Cart path + walkway texture.** Asphalt is flat grey; the walkway is flat
+   green. Both would take the same world-space UV treatment as the turf.
+9. **Postprocessing.** Installed, wired, off. `EffectComposer` breaks
+   `MeshReflectorMaterial` and flattens the lake to grey. Revisit only after (3)
+   -- if water moves to a custom shader the conflict likely disappears, and then
+   SMAA + subtle bloom become free.
+
+### Deliberately NOT next
+
+- More prop placement tuning. The stands/crowds are behind the PROPS toggle and
+  are placeholder geometry until the Higgsfield pipeline lands; refining their
+  positions now is work that gets thrown away.
+- Hole16 precision. Same reason -- it is approximate by the user's own account
+  and inside the toggle.
 
 ## Known cosmetic issues
 
