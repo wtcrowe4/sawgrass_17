@@ -30,8 +30,10 @@ LOCK.tmp
 .playwright-mcp/
 .memsearch/
 
-# ---- Licensed reference imagery (Getty previews) -- keep out of the repo ----
+# ---- Licensed reference imagery -- keep out of a public repo ----
+# Files stay on disk for reference; they are just never committed.
 reference-photos/tournament/
+reference-photos/sawgrass-17-*
 
 # ---- OS ----
 .DS_Store
