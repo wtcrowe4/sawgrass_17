@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { getLakeOutlinePoints } from "@/lib/golf/geometry";
 import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 import { heightAt, lakeEdgeDistance, GRID_FADE_END } from "@/lib/golf/elevation";
+import { bankFactor, BANK_DROP } from "@/lib/golf/shore";
+import { WATER_Y } from "@/lib/golf/types";
 
 // Terrain -- displaced ground built from THREE pieces, because no single
 // approach gives both smooth mounds and an exact shoreline:
@@ -86,6 +88,10 @@ export function Terrain() {
     const ringOuter = offsetPolygon(lake, RING_OUTER);
 
     // --- 1. ring: explicit quad strip, lake[i] -> ringOuter[i] ---
+    // The inner edge DROPS BELOW THE WATER on unbulkheaded arcs, so grass runs
+    // into the lake instead of ending in a 2 ft cliff. Where the bulkhead
+    // retains the bank (bankFactor -> 0) the edge stays level and the timber
+    // wall does the retaining. bankFactor blends across the wall ends.
     // NOT earcut over the offset outline. Offsetting a concave outline makes
     // it self-intersect at sharp vertices, and earcut then bridges the loop
     // with long triangles that stab across the water (the wedge by the tees
@@ -93,26 +99,36 @@ export function Terrain() {
     // no wider than the offset, so a local self-intersection stays local.
     const rp: number[] = [];
     const ru: number[] = [];
+    const rc: number[] = [];
     const n = lake.length;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       // world: (sx, -sy)
+      // Wet-edge shading: the bank's inner lip sits below the waterline, and
+      // left flat-lit it read as a bright tan rim around the entire lake.
+      // Darkening it turns that rim into wet ground at the water's edge.
+      const yi = (WATER_Y - BANK_DROP) * bankFactor(i / n);
+      const yj = (WATER_Y - BANK_DROP) * bankFactor(j / n);
       const q = [
-        [lake[i].x, -lake[i].y],
-        [lake[j].x, -lake[j].y],
-        [ringOuter[j].x, -ringOuter[j].y],
-        [ringOuter[i].x, -ringOuter[i].y],
+        [lake[i].x, yi, -lake[i].y],
+        [lake[j].x, yj, -lake[j].y],
+        [ringOuter[j].x, 0, -ringOuter[j].y],
+        [ringOuter[i].x, 0, -ringOuter[i].y],
       ];
+      const WET = 0.42; // multiplier at the submerged lip
+      const shade = [WET, WET, 1, 1];
       for (const [a, b, d] of [[0, 2, 1], [0, 3, 2]]) {
         for (const k of [a, b, d]) {
-          rp.push(q[k][0], 0, q[k][1]);
-          ru.push(q[k][0] / UV_TILE, q[k][1] / UV_TILE);
+          rp.push(q[k][0], q[k][1], q[k][2]);
+          ru.push(q[k][0] / UV_TILE, q[k][2] / UV_TILE);
+          rc.push(shade[k], shade[k], shade[k]);
         }
       }
     }
     const ringGeo = new THREE.BufferGeometry();
     ringGeo.setAttribute("position", new THREE.Float32BufferAttribute(rp, 3));
     ringGeo.setAttribute("uv", new THREE.Float32BufferAttribute(ru, 2));
+    ringGeo.setAttribute("color", new THREE.Float32BufferAttribute(rc, 3));
     ringGeo.computeVertexNormals();
 
     // --- 2. displaced grid, cells inside skipPoly removed ---
@@ -177,9 +193,11 @@ export function Terrain() {
 
   return (
     <group name="terrain">
-      {/* ring sits a hair proud so its overlap with the grid cannot z-fight */}
-      <mesh geometry={ringGeo} position={[0, TERRAIN_Y + 0.004, 0]} receiveShadow>
-        <meshStandardMaterial color={ROUGH_COLOR} roughness={ROUGHNESS.turf} metalness={0} />
+      {/* Ring sits proud of the grid: they overlap between RING_INNER_SKIP and
+          RING_OUTER, and at 0.004 the two coplanar surfaces z-fought, showing
+          the grid's jagged dropped-cell boundary as a staircase at the bank. */}
+      <mesh geometry={ringGeo} position={[0, TERRAIN_Y + 0.014, 0]} receiveShadow>
+        <meshStandardMaterial color={ROUGH_COLOR} vertexColors roughness={ROUGHNESS.turf} metalness={0} />
       </mesh>
       <mesh geometry={gridGeo} position={[0, TERRAIN_Y, 0]} receiveShadow castShadow>
         <meshStandardMaterial color={ROUGH_COLOR} roughness={ROUGHNESS.turf} metalness={0} />

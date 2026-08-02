@@ -46,10 +46,12 @@ rm -f "$WSL_DIR/$NAME"
 
 # Pre-warm: the first request after an edit hits Turbopack mid-recompile and
 # the capture lands on the "Compiling..." splash instead of the scene.
+# Turbopack recompiles on the first hit after an edit and the capture lands on
+# its "Compiling..." splash. Two warm hits plus a settle beat it reliably.
 curl -s -o /dev/null --max-time 120 "$URL" || true
-sleep 3
+sleep 4
 curl -s -o /dev/null --max-time 120 "$URL" || true
-sleep 2
+sleep 6
 
 # --headless (old) is required: --headless=new ignores --screenshot here.
 # Unique profile per run: a shared profile dir deadlocks if a prior Chrome

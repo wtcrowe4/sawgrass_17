@@ -17,7 +17,7 @@ import { Trees } from "./parts/Trees";
 import { Tracers } from "./parts/Tracers";
 import { SatelliteOverlay } from "./parts/SatelliteOverlay";
 import { TreeIsland } from "./parts/TreeIsland";
-import { Shoreline } from "./parts/Shoreline";
+import { FlowerBed } from "./parts/FlowerBed";
 import { GrassApproach } from "./parts/GrassApproach";
 import { IslandBunker } from "./parts/IslandBunker";
 import { GaussianSplat } from "./parts/GaussianSplat";
@@ -169,7 +169,10 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
         />
       )}
       <Terrain />
-      <Shoreline />
+      {/* Shoreline's wet-stone tube is retired: it drew at a fixed y=0.04 and
+          would hover over the sloped bank now that the water sits lower. The
+          bank + flower bed + bulkhead cover the edge. File kept. */}
+      <FlowerBed />
       <TreeIsland showTree={showProps} />
       <Water />
       <Green />

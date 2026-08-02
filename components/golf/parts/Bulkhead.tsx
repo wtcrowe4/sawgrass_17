@@ -10,6 +10,7 @@ import {
   offsetPolygon,
 } from "@/lib/golf/geometry";
 import { WATER_Y } from "@/lib/golf/types";
+import { SHORE_ARCS } from "@/lib/golf/shore";
 
 // Bulkhead -- timber retaining walls around every land/water boundary.
 //
@@ -56,15 +57,18 @@ interface Strip {
 }
 
 /**
- * Vertical wall + horizontal coping board along a closed outline.
+ * Vertical wall + horizontal coping board along an outline.
  * `wallOn` picks which edge carries the wall: islands are retained from the
  * outside (wall on the offset line), the lake bank from the inside (wall on the
  * outline itself, at the water's edge).
+ * `arc` limits the run to a fraction range of the loop -- the lake perimeter is
+ * only bulkheaded around the 16th green (see lib/golf/shore.ts).
  */
 function buildWall(
   pts: THREE.Vector2[],
   capY: number,
-  wallOn: "outer" | "inner"
+  wallOn: "outer" | "inner",
+  arc?: [number, number]
 ): Strip {
   const outer = offsetPolygon(pts, WALL_OFFSET);
   const cap = offsetPolygon(pts, wallOn === "outer" ? CAP_BOARD_WU : -CAP_BOARD_WU);
@@ -79,15 +83,18 @@ function buildWall(
   const vBot = vAt(bottom, capY);
   const vTop = vAt(capY, capY);
 
-  let arc = 0;
-  for (let i = 0; i < n; i++) {
+  const lo = arc ? Math.floor(arc[0] * n) : 0;
+  const hi = arc ? Math.ceil(arc[1] * n) : n;
+
+  let arcLen = 0;
+  for (let i = lo; i < hi; i++) {
     const j = (i + 1) % n;
     const a = wallLine[i];
     const b = wallLine[j];
     const segLen = Math.hypot(b.x - a.x, b.y - a.y);
-    const u0 = arc / PLANK_TILE_WU;
-    const u1 = (arc + segLen) / PLANK_TILE_WU;
-    arc += segLen;
+    const u0 = arcLen / PLANK_TILE_WU;
+    const u1 = (arcLen + segLen) / PLANK_TILE_WU;
+    arcLen += segLen;
 
     // shape space -> world: (sx, y, -sy)
     // wall quad: a-top, b-top, b-bottom, a-bottom
@@ -218,7 +225,8 @@ export function Bulkhead() {
       buildWall(green, CAP_GREEN, "outer"),
       buildWall(walkway, CAP_WALKWAY, "outer"),
       buildWall(tree, CAP_TREE, "outer"),
-      buildWall(lake, CAP_LAKE, "inner"),
+      // lake perimeter: ONLY around the 16th green, not down its fairway
+      buildWall(lake, CAP_LAKE, "inner", SHORE_ARCS.bulkhead),
     ]);
   }, []);
 

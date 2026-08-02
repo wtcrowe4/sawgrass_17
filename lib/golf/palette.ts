@@ -38,6 +38,12 @@ export const PALETTE = {
   trim:         "#e8e9ec",
   accent:       "#f2c744", // flag yellow
 
+  // --- Shoreline planting (spectator side, per the 2026 refs) ---
+  flowerRed:    "#a3313a",
+  flowerRose:   "#b8474f",
+  flowerCoral:  "#c2564a",
+  bedMulch:     "#3a2c22",
+
   // --- Vegetation ---
   canopyDark:   "#1c3a24",
   canopyMid:    "#2c5433",
