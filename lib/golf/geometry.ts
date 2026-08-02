@@ -720,12 +720,45 @@ function offsetRaw(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
 }
 
 /**
+ * Laplacian relaxation on a closed polyline. Pulls each point toward the mean
+ * of its neighbours, which evens out the spacing an offset leaves behind on
+ * tight curves without moving the polygon as a whole.
+ */
+function relax(pts: THREE.Vector2[], iterations: number, w: number): THREE.Vector2[] {
+  let cur = pts;
+  const n = pts.length;
+  for (let it = 0; it < iterations; it++) {
+    const next: THREE.Vector2[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = cur[(i - 1 + n) % n];
+      const b = cur[i];
+      const c = cur[(i + 1) % n];
+      next[i] = new THREE.Vector2(
+        b.x * (1 - w) + ((a.x + c.x) / 2) * w,
+        b.y * (1 - w) + ((a.y + c.y) / 2) * w
+      );
+    }
+    cur = next;
+  }
+  return cur;
+}
+
+/**
  * Offset a closed polygon outward by d (shape space).
  * Self-correcting: winding is verified by comparing areas, because guessing it
  * wrong silently collapses the polygon inward instead of growing it.
+ *
+ * The result is relaxed afterwards. Raw per-vertex offsetting of a densely
+ * sampled concave spline leaves the offset line unevenly spaced -- which showed
+ * up as a scalloped flower-bed edge and as gaps where Terrain's shore ring
+ * failed to reach past the grid's dropped-cell boundary (a staircase at the
+ * bank). Relaxing evens the spacing and both go away.
  */
-export function offsetPolygon(pts: THREE.Vector2[], d: number): THREE.Vector2[] {
-  const grown = offsetRaw(pts, d);
-  if (Math.abs(polygonSignedArea(grown)) >= Math.abs(polygonSignedArea(pts))) return grown;
-  return offsetRaw(pts, -d);
+export function offsetPolygon(pts: THREE.Vector2[], d: number, smooth = true): THREE.Vector2[] {
+  const raw = offsetRaw(pts, d);
+  const grown =
+    Math.abs(polygonSignedArea(raw)) >= Math.abs(polygonSignedArea(pts))
+      ? raw
+      : offsetRaw(pts, -d);
+  return smooth ? relax(grown, 6, 0.5) : grown;
 }

@@ -36,7 +36,7 @@ const OUTER_EXTENT = 100; // matches the original terrain square
 // banks of the north-east arm outward by more than half its width makes the
 // offsets cross and the ring bridges the channel with green. 2.2 clears it.
 // Must still exceed RING_INNER_SKIP + half a grid cell or a gap opens.
-const RING_INNER_SKIP = 1.4; // grid cells within this of the water are dropped
+const RING_INNER_SKIP = 1.9; // grid cells within this of the water are dropped
 const RING_OUTER = 2.2;      // ring reaches past the grid edge, no gap
 const UV_TILE = 6.0;         // wu per texture repeat, for future turf maps
 
@@ -199,7 +199,11 @@ export function Terrain() {
       <mesh geometry={ringGeo} position={[0, TERRAIN_Y + 0.014, 0]} receiveShadow>
         <meshStandardMaterial color={ROUGH_COLOR} vertexColors roughness={ROUGHNESS.turf} metalness={0} />
       </mesh>
-      <mesh geometry={gridGeo} position={[0, TERRAIN_Y, 0]} receiveShadow castShadow>
+      {/* castShadow OFF: the grid's dropped-cell boundary is jagged by
+          construction, and with the sun at 12 deg its shadow fell across the
+          water as a staircase. Self-shadowing from ~1wu mounds is not worth
+          that. Props and the bulkhead still cast. */}
+      <mesh geometry={gridGeo} position={[0, TERRAIN_Y, 0]} receiveShadow>
         <meshStandardMaterial color={ROUGH_COLOR} roughness={ROUGHNESS.turf} metalness={0} />
       </mesh>
       <mesh geometry={skirtGeo} position={[0, TERRAIN_Y, 0]} receiveShadow>
