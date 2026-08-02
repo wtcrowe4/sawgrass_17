@@ -154,27 +154,23 @@ East-west mirror: scene geometry is E-W mirrored vs real geography (causeway at 
 Texture is U-flipped (`tex.repeat.set(-1,1)`) to match. North-up image maps correctly after plane -PI/2 X rotation.
 Parent group handles world-Y spin; child mesh does the -PI/2 X flip (keeps rotation axis correct).
 
-## Current state (as of 2026-07-19)
+## Current state (as of 2026-08-02)
 
-**Done:**
-- All geometry satellite-traced (green, lake, approach, causeway, cart path, tree island)
-- Real 2025 ShotLink data: 431 tee shots + real per-round pins (`data/real-shots-2025.ts`,
-  regenerate: `scripts/fetch-shots.sh R2025011` then `scripts/transform_shots.py`)
-- Tournament build-out from Getty refs (local-only in `reference-photos/tournament/`):
-  navy/white grandstands + east stadium wall, videoboard w/ leaderboard behind green,
-  hospitality tents, ~400 instanced spectators (muted palette), tree island lone oak
-  w/ yellow bloom ring; 16th green complex + fairway on the far shore (Hole16.tsx)
-- Plank-textured wood bulkhead, pine/oak instanced treeline, golden hour lighting
-- Tracers: real data, arcs fade to faint traces after landing, hover restores
-- Flag always tournament yellow (real 17 flag); PIN_COLORS = HUD swatches only
-- `scripts/snap.sh <out.png> [url] [waitMs]` -- GPU screenshots via Windows Chrome CDP.
-  NEVER launch WSL-side chromium against this scene (SwiftShader pins 8 cores)
+See `.claude/HANDOFF.md` for the full picture -- that file is kept current and
+this section is only a pointer.
 
-**Pending:**
-- Terrain elevation (spectator mounds; USGS 3DEP 1m DEM candidate)
-- Gaussian splat capture (pipeline researched; needs source video pick)
-- Stands could be bigger/more continuous vs getty 1248046004
-- Water darker at golden hour; lighting fine-tune
+**Scene renders with props OFF by default** (`showProps`, HUD PROPS button).
+Terrain, water, green, bulkhead, flower bed, tracers and the pin are live;
+grandstands, crowds, treeline, island oak and Hole16 are behind the toggle.
+
+**Recent architecture:** `lib/golf/palette.ts` (all colour), `lib/golf/elevation.ts`
+(`heightAt`, swap the body for a real DEM), `lib/golf/shore.ts` (what each arc of
+the lake edge is made of). Terrain is ring + uniform grid + skirt; the grid
+carries world-space UVs, so a tiling turf texture is now possible.
+
+**Pending:** turf albedo/normal on the new UVs; decide on USGS 3DEP vs synthetic
+mounds; Higgsfield prop pipeline (Prop component + palette clamp + vendored
+Draco); postprocessing is wired but off (breaks MeshReflectorMaterial).
 
 ## Reference photos
 
