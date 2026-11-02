@@ -8,6 +8,57 @@ Check `components/golf/Sawgrass17.tsx` imports for what is actually mounted.
 
 ---
 
+## Realism tier 1 -- branch `feat/realism-tier1` (2026-11-01)
+
+Unmerged, unpushed, awaiting review. All three tier-1 items are in.
+
+| Commit | What |
+|---|---|
+| `e3acc5d` | `?cam=px,py,pz,tx,ty,tz` query param -- repeatable screenshot angles |
+| `5d4221a` | Turf albedo/normal + mowing stripes (`lib/golf/turf.ts`) |
+| `e6ca5ca` | Water depth ramp + fresnel (`Water.tsx`, `waterBank` token) |
+
+- **Turf** -- `makeTurfMaterial()` in `lib/golf/turf.ts`. Samples by WORLD
+  x/z (not mesh UVs), so terrain, island, tees, approach and tree island tile
+  continuously across mesh boundaries. Albedo is divided by its measured mean
+  (`MAP_MEAN`), so it adds blade detail only and `palette.ts` still sets every
+  hue. Plus value-noise mottling. Assets: ambientCG Grass004 (CC0), 1K albedo
+  + 512 normal = 274 KB, see `public/textures/CREDITS.md`.
+- **Stripes** -- `STRIPES` in `turf.ts`: green 0.9 wu diagonal cross-cut
+  checkerboard, tees 1.6 wu along the line of play, rough none. Widths are
+  exaggerated vs real mower passes on purpose (sub-pixel from the tower).
+- **Water** -- shore distance (lake edge + island green + tree island) baked
+  once into a 192px R8 texture; ramp `waterBank -> waterShallow -> waterDeep`.
+  Fresnel spliced into drei's reflector by WRAPPING its `onBeforeCompile`
+  (overriding it would drop the reflection pass). Grazing = full mirror as
+  before, overhead = 30% reflection so the ramp shows. Postprocessing still off.
+  Ripple overlay opacity halved (0.28 -> 0.14) -- its flat tint hid the ramp.
+- Crowd/Trees white-base exception untouched. Bulkhead, flower bed, cart path
+  and sand unchanged.
+
+**Screenshot tooling note:** against `next dev`, every capture after the first
+lands on a blank canvas -- Turbopack sends `[Fast Refresh] rebuilding` on HMR
+connect and virtual time skips past the first frame. Reliable path:
+`npm run build && npx next start -p 3002`, then `scripts/snap.sh`. Blank
+frames are ~16 KB; retry those.
+
+### Left after tier 1
+- Fairway: the scene has no fairway mesh -- `GrassApproach` is the walkway and
+  is deliberately rough-coloured and unstriped. Stripes appear on tees + green.
+- Bank rim reads slightly amber at very low camera angles (olive bank tint x
+  warm sky reflection). Tune `waterBank` or the 0..1 wu ramp in `Water.tsx`.
+- Tier 2/3 untouched (green contours, bunker sand, props, cart path texture).
+
+### Known perf item -- `Water.tsx` CPU canvases
+`useRippleTexture` (256^2) and `useCausticTexture` (512^2) rebuild their
+canvases pixel by pixel in JS **every frame** (~330k texels, several trig calls
+each) and re-upload both textures. That is almost certainly the scene's
+biggest per-frame cost -- far more than the tier-1 shaders. Fix: move both to
+a shader (time uniform) or at minimum throttle to ~15-20 Hz. Not touched in
+tier 1.
+
+---
+
 ## Where things stand
 
 Working tree is clean, everything committed on `main`. Last commit `569bade`.
@@ -79,7 +130,7 @@ subdivided earcut output, whose slivers sheared under displacement.
 
 `scripts/snap.sh <out.png> [url] [budgetMs]`
 
-Dev server: `PORT=3001 npm run dev`. **Port 3000 is deliberately left free** for
+Dev server: `PORT=3001 npm run dev` (other agents: 3002). **Port 3000 is deliberately left free** for
 the user's other work.
 
 **Mirrored WSL networking was disabled 2026-07-30** (`.wslconfig`: Tailscale +
@@ -109,15 +160,15 @@ list starts where it does.
 
 ### Tier 1 -- do these first
 
-1. **Turf albedo + normal on the terrain grid.** UNBLOCKED as of this session:
+1. **[DONE on feat/realism-tier1]** **Turf albedo + normal on the terrain grid.** UNBLOCKED as of this session:
    the grid carries world-space UVs (`UV_TILE = 6.0` wu per repeat).
    `ShapeGeometry` never gave usable UVs, which is why this waited. Biggest
    single visual win available.
-2. **Mowing stripes.** The strongest "this is a golf broadcast" cue there is,
+2. **[DONE on feat/realism-tier1]** **Mowing stripes.** The strongest "this is a golf broadcast" cue there is,
    and it is nearly free -- a directional stripe factor in the shader or a
    second UV channel. Green gets a tight cross-cut, fairway/tee a wider stripe,
    rough none. Do it with (1); same material work.
-3. **Water depth gradient.** The lake is one flat blue. Real water shallows to
+3. **[DONE on feat/realism-tier1]** **Water depth gradient.** The lake is one flat blue. Real water shallows to
    olive/tan at the bank. Sample distance-to-shore (`lakeEdgeDistance` already
    exists) and blend `waterShallow` -> `waterDeep`. Also add fresnel so grazing
    angles go reflective and overhead goes transparent.
