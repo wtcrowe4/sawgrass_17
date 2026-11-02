@@ -17,7 +17,8 @@ export const PALETTE = {
 
   // --- Water ---
   waterDeep:    "#123f54", // reflector base
-  waterShallow: "#1b5570", // shoreline shelf
+  waterShallow: "#1d5662", // shelf, ~1-6 wu out -- greener than deep
+  waterBank:    "#3a4630", // olive/tan silt at the very edge (depth ramp start)
   waterRipple:  "#124256", // ripple overlay tint
 
   // --- Sky / atmosphere. fog MUST match the horizon or the terrain edge
