@@ -7,6 +7,7 @@ import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
 import { heightAt, lakeEdgeDistance, GRID_FADE_END } from "@/lib/golf/elevation";
 import { bankFactor, BANK_DROP } from "@/lib/golf/shore";
 import { WATER_Y } from "@/lib/golf/types";
+import { makeTurfMaterial } from "@/lib/golf/turf";
 
 // Terrain -- displaced ground built from THREE pieces, because no single
 // approach gives both smooth mounds and an exact shoreline:
@@ -38,7 +39,7 @@ const OUTER_EXTENT = 100; // matches the original terrain square
 // Must still exceed RING_INNER_SKIP + half a grid cell or a gap opens.
 const RING_INNER_SKIP = 1.9; // grid cells within this of the water are dropped
 const RING_OUTER = 2.2;      // ring reaches past the grid edge, no gap
-const UV_TILE = 6.0;         // wu per texture repeat, for future turf maps
+const UV_TILE = 6.0;         // wu per repeat (turf.ts samples world x/z directly now)
 
 function signedArea(p: THREE.Vector2[]): number {
   let a = 0;
@@ -191,24 +192,25 @@ export function Terrain() {
     return { ringGeo, gridGeo, skirtGeo };
   }, []);
 
+  // Rough: textured, mottled, never striped. The ring keeps vertexColors for
+  // its wet-lip darkening.
+  const { ringMat, roughMat } = useMemo(() => ({
+    ringMat: makeTurfMaterial({ color: ROUGH_COLOR, roughness: ROUGHNESS.turf, vertexColors: true }),
+    roughMat: makeTurfMaterial({ color: ROUGH_COLOR, roughness: ROUGHNESS.turf }),
+  }), []);
+
   return (
     <group name="terrain">
       {/* Ring sits proud of the grid: they overlap between RING_INNER_SKIP and
           RING_OUTER, and at 0.004 the two coplanar surfaces z-fought, showing
           the grid's jagged dropped-cell boundary as a staircase at the bank. */}
-      <mesh geometry={ringGeo} position={[0, TERRAIN_Y + 0.014, 0]} receiveShadow>
-        <meshStandardMaterial color={ROUGH_COLOR} vertexColors roughness={ROUGHNESS.turf} metalness={0} />
-      </mesh>
+      <mesh geometry={ringGeo} material={ringMat} position={[0, TERRAIN_Y + 0.014, 0]} receiveShadow />
       {/* castShadow OFF: the grid's dropped-cell boundary is jagged by
           construction, and with the sun at 12 deg its shadow fell across the
           water as a staircase. Self-shadowing from ~1wu mounds is not worth
           that. Props and the bulkhead still cast. */}
-      <mesh geometry={gridGeo} position={[0, TERRAIN_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={ROUGH_COLOR} roughness={ROUGHNESS.turf} metalness={0} />
-      </mesh>
-      <mesh geometry={skirtGeo} position={[0, TERRAIN_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={ROUGH_COLOR} roughness={ROUGHNESS.turf} metalness={0} />
-      </mesh>
+      <mesh geometry={gridGeo} material={roughMat} position={[0, TERRAIN_Y, 0]} receiveShadow />
+      <mesh geometry={skirtGeo} material={roughMat} position={[0, TERRAIN_Y, 0]} receiveShadow />
     </group>
   );
 }

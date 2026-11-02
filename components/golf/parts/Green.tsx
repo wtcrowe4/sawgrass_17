@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { makeGreenShape, makeGreenSurfaceShape } from "@/lib/golf/geometry";
 import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
+import { makeTurfMaterial, STRIPES } from "@/lib/golf/turf";
 
 // Green -- two-layer island green.
 //
@@ -27,27 +28,27 @@ export function Green() {
     return { landmassGeo, surfaceGeo };
   }, []);
 
+  const { landmassMat, surfaceMat } = useMemo(() => ({
+    landmassMat: makeTurfMaterial({ color: LANDMASS_COLOR, roughness: ROUGHNESS.turf }),
+    // cross-cut checkerboard; finer blade detail than the rough
+    surfaceMat: makeTurfMaterial({
+      color: SURFACE_COLOR,
+      roughness: ROUGHNESS.green,
+      stripe: STRIPES.green,
+      detail: 0.25,
+      mottle: 0.04,
+      emissive: SURFACE_COLOR,
+      emissiveIntensity: 0.04,
+    }),
+  }), []);
+
   return (
     <group name="green">
       {/* Landmass -- full island, darker collar/rough shade */}
-      <mesh geometry={landmassGeo} position={[0, GREEN_Y - 0.005, 0]} receiveShadow>
-        <meshStandardMaterial
-          color={LANDMASS_COLOR}
-          roughness={ROUGHNESS.turf}
-          metalness={0.0}
-        />
-      </mesh>
+      <mesh geometry={landmassGeo} material={landmassMat} position={[0, GREEN_Y - 0.005, 0]} receiveShadow />
 
       {/* Putting surface -- traced outline, bright tour green */}
-      <mesh geometry={surfaceGeo} position={[0, GREEN_Y, 0]} receiveShadow>
-        <meshStandardMaterial
-          color={SURFACE_COLOR}
-          roughness={ROUGHNESS.green}
-          metalness={0.0}
-          emissive={SURFACE_COLOR}
-          emissiveIntensity={0.04}
-        />
-      </mesh>
+      <mesh geometry={surfaceGeo} material={surfaceMat} position={[0, GREEN_Y, 0]} receiveShadow />
     </group>
   );
 }

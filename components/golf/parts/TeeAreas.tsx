@@ -9,6 +9,7 @@ import {
 } from "@/lib/golf/geometry";
 import { Y2W } from "@/lib/golf/types";
 import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
+import { makeTurfMaterial, STRIPES } from "@/lib/golf/turf";
 
 // TeeAreas -- light-green mown turf for the members tee complex
 // and the pro tournament tee box. Flat surfaces (no stone edge)
@@ -30,15 +31,16 @@ export function TeeAreas() {
     return { membersGeo: m, proGeo: p };
   }, []);
 
+  const teeMat = useMemo(
+    () => makeTurfMaterial({ color: TEE_GRASS_COLOR, roughness: ROUGHNESS.turf, stripe: STRIPES.fairway }),
+    [],
+  );
+
   return (
     <group name="tee-areas">
-      <mesh geometry={membersGeo} position={[0, TEE_GRASS_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={ROUGHNESS.turf} metalness={0.0} />
-      </mesh>
+      <mesh geometry={membersGeo} material={teeMat} position={[0, TEE_GRASS_Y, 0]} receiveShadow />
 
-      <mesh geometry={proGeo} position={[0, TEE_GRASS_Y + 0.005, 0]} receiveShadow>
-        <meshStandardMaterial color={TEE_GRASS_COLOR} roughness={ROUGHNESS.turf} metalness={0.0} />
-      </mesh>
+      <mesh geometry={proGeo} material={teeMat} position={[0, TEE_GRASS_Y + 0.005, 0]} receiveShadow />
 
       <mesh
         position={[PRO_TEE_CENTER.x - MARKER_SPACING, MARKER_Y, PRO_TEE_CENTER.z + 1.2 * Y2W]}

@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeTreeIslandShape, TREE_ISLAND_CENTER } from "@/lib/golf/geometry";
-import { PALETTE } from "@/lib/golf/palette";
+import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
+import { makeTurfMaterial } from "@/lib/golf/turf";
 
 // TreeIsland -- small island east/south of green with large cypress.
 // Traced 2026-05-12 from satellite overlay.
@@ -42,6 +43,7 @@ export function TreeIsland({ showTree = true }: TreeIslandProps) {
     geo.rotateX(-Math.PI / 2);
     return geo;
   }, []);
+  const moundMat = useMemo(() => makeTurfMaterial({ color: ISLAND_COLOR, roughness: ROUGHNESS.turf }), []);
 
   // The real tree is a lone live OAK -- thick trunk, broad irregular canopy
   // (getty 2113291318 / 2205293816), not a conifer cone.
@@ -54,9 +56,7 @@ export function TreeIsland({ showTree = true }: TreeIslandProps) {
 
   return (
     <group name="tree-island">
-      <mesh geometry={moundGeo} position={[0, ISLAND_Y, 0]} receiveShadow>
-        <meshStandardMaterial color={ISLAND_COLOR} roughness={0.96} metalness={0.0} />
-      </mesh>
+      <mesh geometry={moundGeo} material={moundMat} position={[0, ISLAND_Y, 0]} receiveShadow />
       {showTree && (
         <>
         {/* oak trunk + irregular canopy blobs */}
