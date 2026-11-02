@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
 import { EffectComposer, Bloom, SMAA, Vignette } from "@react-three/postprocessing";
@@ -81,6 +81,26 @@ function useCinematicIntro(enabled: boolean) {
   });
 }
 
+// ?cam=px,py,pz,tx,ty,tz -- place the camera for repeatable screenshots
+// (close-ups for texture work). Ignored unless all six numbers parse.
+function useDebugCamera() {
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls) as unknown as { target?: THREE.Vector3; update?: () => void } | null;
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("cam");
+    if (!raw) return;
+    const v = raw.split(",").map(Number);
+    if (v.length !== 6 || v.some((n) => !Number.isFinite(n))) return;
+    camera.position.set(v[0], v[1], v[2]);
+    if (controls?.target) {
+      controls.target.set(v[3], v[4], v[5]);
+      controls.update?.();
+    } else {
+      camera.lookAt(v[3], v[4], v[5]);
+    }
+  }, [camera, controls]);
+}
+
 // --- Lighting -----------------------------------------------------------------
 // ONE light rig, matched to the HDRI. Measured 2026-08-01 by decoding
 // public/hdr/venice_sunset_1k.hdr and finding its peak-luminance texel:
@@ -134,6 +154,7 @@ interface SceneProps {
 
 function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post }: SceneProps) {
   useCinematicIntro(intro);
+  useDebugCamera();
 
   return (
     <>
