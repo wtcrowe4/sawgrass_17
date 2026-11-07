@@ -145,128 +145,107 @@ varying vec3 vWaterWorld;
 // WATER_Y lives in lib/golf/types.ts -- Bulkhead needs it too, to align the
 // texture's baked waterline stain with the actual surface.
 
-function useRippleTexture(): React.MutableRefObject<THREE.CanvasTexture | null> {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const texRef    = useRef<THREE.CanvasTexture | null>(null);
-  const timeRef   = useRef(0);
+// Both overlays used to rebuild a CanvasTexture pixel-by-pixel in JS every
+// frame (~330k texels + two GPU uploads). The same wave math now runs in
+// fragment shaders; per-frame cost is one uTime uniform write per material.
+// Coordinates: the old textures tiled via tex.repeat, so shader coords are
+// uv * old-repeat; frequencies below are unchanged from the canvas code.
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const canvas    = document.createElement("canvas");
-    canvas.width    = 256;
-    canvas.height   = 256;
-    canvasRef.current = canvas;
-    const tex       = new THREE.CanvasTexture(canvas);
-    tex.wrapS       = THREE.RepeatWrapping;
-    tex.wrapT       = THREE.RepeatWrapping;
-    tex.repeat.set(8, 8);
-    texRef.current  = tex;
-  }, []);
-
-  useFrame((_, delta) => {
-    timeRef.current += delta * 0.4;
-    const canvas = canvasRef.current;
-    const tex    = texRef.current;
-    if (!canvas || !tex) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-    const t = timeRef.current;
-    const imgData = ctx.createImageData(w, h);
-    const data    = imgData.data;
-    for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const fx = px / w;
-        const fy = py / h;
-        // 3 octaves for richer detail
-        const w1 = Math.sin(fx * 14 + t * 1.1) * Math.cos(fy * 10 + t * 0.75);
-        const w2 = Math.sin(fx * 8  - t * 0.85) * Math.cos(fy * 16 + t * 1.2);
-        const w3 = Math.sin((fx + fy) * 22 + t * 1.6) * 0.5;
-        const n  = (w1 + w2 + w3) * 0.34;
-        const amp = 28;
-        const idx = (py * w + px) * 4;
-        data[idx + 0] = Math.round(128 + n * amp);
-        data[idx + 1] = Math.round(128 + Math.sin(fy * 13 + t) * amp * 0.6);
-        data[idx + 2] = 255;
-        data[idx + 3] = 255;
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
-    tex.needsUpdate = true;
-  });
-
-  return texRef;
+const OVERLAY_VERT = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
+`;
 
-// Caustic-like shimmer: bright wavy bands that scroll across the surface.
-function useCausticTexture(): React.MutableRefObject<THREE.CanvasTexture | null> {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const texRef    = useRef<THREE.CanvasTexture | null>(null);
-  const timeRef   = useRef(0);
+// Ripple: 3-octave interference field, shaded as if lit from the sun side.
+// Replaces the meshStandardMaterial + animated normal map.
+const RIPPLE_FRAG = /* glsl */ `
+uniform float uTime;
+uniform vec3 uColor;
+uniform float uOpacity;
+varying vec2 vUv;
+void main() {
+  vec2 p = vUv * 8.0;        // was tex.repeat.set(8, 8); continuous, so no tile seams
+  float t = uTime * 0.4;
+  float w1 = sin(p.x * 14.0 + t * 1.1) * cos(p.y * 10.0 + t * 0.75);
+  float w2 = sin(p.x * 8.0  - t * 0.85) * cos(p.y * 16.0 + t * 1.2);
+  float w3 = sin((p.x + p.y) * 22.0 + t * 1.6) * 0.5;
+  float n  = (w1 + w2 + w3) * 0.34;
+  vec3 col = uColor * (0.8 + n * 0.45);
+  gl_FragColor = vec4(col, uOpacity);
+  #include <colorspace_fragment>
+}
+`;
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const canvas = document.createElement("canvas");
-    canvas.width  = 512;
-    canvas.height = 512;
-    canvasRef.current = canvas;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(2.5, 2.5);
-    texRef.current = tex;
+// Caustics: two interfering wave systems sharpened into bright veins.
+// Replaces the meshBasicMaterial + scrolling CanvasTexture. The lake
+// ShapeGeometry's UVs are shape-space coords (world x, -z), so the pattern
+// is anchored to the water, exactly like the old world-tiled texture.
+const CAUSTIC_FRAG = /* glsl */ `
+uniform float uTime;
+uniform float uOpacity;
+varying vec2 vUv;
+void main() {
+  float t = uTime * 0.18;
+  // was tex.repeat.set(2.5, 2.5) + offset scroll of (0.012, 0.009) tiles/s
+  vec2 p = vUv * 2.5 + vec2(0.012, 0.009) * uTime;
+  float a = sin((p.x * 7.0 + sin(p.y * 5.0 + t * 1.3)) * 2.5 + t * 0.9);
+  float b = sin((p.y * 6.5 + cos(p.x * 4.8 + t * 1.1)) * 2.5 - t * 0.7);
+  float v = (a + b) * 0.5;
+  v = pow(max(v, 0.0), 4.2);
+  // The old mipmapped texture blurred to nothing at distance; without this
+  // fade the full-frequency pattern aliases into white speckle far away.
+  float px = max(fwidth(p.x), fwidth(p.y));
+  v *= 1.0 - smoothstep(0.04, 0.18, px);
+  vec3 col = vec3(0.706, 0.863, 1.0) + v * vec3(0.3, 0.13, 0.0); // pale aqua -> white veins
+  gl_FragColor = vec4(col, v * uOpacity);
+  #include <colorspace_fragment>
+}
+`;
+
+interface WaterOverlayMaterials { ripple: THREE.ShaderMaterial; caustic: THREE.ShaderMaterial }
+
+function useWaterOverlayMaterials(): WaterOverlayMaterials {
+  const mats = useMemo<WaterOverlayMaterials>(() => {
+    const ripple = new THREE.ShaderMaterial({
+      vertexShader: OVERLAY_VERT,
+      fragmentShader: RIPPLE_FRAG,
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color(PALETTE.waterRipple) },
+        uOpacity: { value: 0.14 },
+      },
+      transparent: true,
+      depthWrite: false,
+    });
+    const caustic = new THREE.ShaderMaterial({
+      vertexShader: OVERLAY_VERT,
+      fragmentShader: CAUSTIC_FRAG,
+      uniforms: {
+        uTime: { value: 0 },
+        uOpacity: { value: 0.12 },
+      },
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    return { ripple, caustic };
   }, []);
 
   useFrame((_, delta) => {
-    timeRef.current += delta * 0.18;
-    const canvas = canvasRef.current;
-    const tex    = texRef.current;
-    if (!canvas || !tex) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-    const t = timeRef.current;
-    const img = ctx.createImageData(w, h);
-    const data = img.data;
-    for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const fx = px / w;
-        const fy = py / h;
-        // Two interfering wave systems => caustic-like bright veins
-        const a = Math.sin((fx * 7.0 + Math.sin(fy * 5.0 + t * 1.3)) * 2.5 + t * 0.9);
-        const b = Math.sin((fy * 6.5 + Math.cos(fx * 4.8 + t * 1.1)) * 2.5 - t * 0.7);
-        let v = (a + b) * 0.5;
-        // Sharpen into bright veins
-        v = Math.pow(Math.max(0, v), 4.2);
-        const bright = Math.round(v * 255);
-        const idx = (py * w + px) * 4;
-        // Pale aqua tint
-        data[idx + 0] = Math.round(180 + bright * 0.3);
-        data[idx + 1] = Math.round(220 + bright * 0.13);
-        data[idx + 2] = 255;
-        data[idx + 3] = bright; // alpha = brightness so dark areas are transparent
-      }
-    }
-    ctx.putImageData(img, 0, 0);
-    tex.needsUpdate = true;
+    mats.ripple.uniforms.uTime.value += delta;
+    mats.caustic.uniforms.uTime.value += delta;
   });
 
-  return texRef;
+  useEffect(() => () => { mats.ripple.dispose(); mats.caustic.dispose(); }, [mats]);
+
+  return mats;
 }
 
 export function Water() {
-  const rippleTexRef  = useRippleTexture();
-  const causticTexRef = useCausticTexture();
-
-  // Slowly scroll the caustic texture for movement
-  const causticMatRef = useRef<THREE.MeshBasicMaterial>(null);
-  useFrame((_, delta) => {
-    const tex = causticTexRef.current;
-    if (!tex) return;
-    tex.offset.x += delta * 0.012;
-    tex.offset.y += delta * 0.009;
-  });
+  const overlays = useWaterOverlayMaterials();
 
   const shoreField = useMemo(() => bakeShoreField(), []);
   const reflectorRef = useRef<React.ComponentRef<typeof MeshReflectorMaterial>>(null);
@@ -299,31 +278,13 @@ export function Water() {
         />
       </mesh>
 
-      {/* Ripple normal overlay */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y + 0.001, 0]}>
+      {/* Ripple shimmer overlay (GPU, was animated normal map) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y + 0.001, 0]} material={overlays.ripple}>
         <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial
-          color={PALETTE.waterRipple}
-          transparent
-          opacity={0.14}
-          roughness={0.5}
-          metalness={0.02}
-          normalMap={rippleTexRef.current ?? undefined}
-          normalScale={new THREE.Vector2(0.15, 0.15)}
-        />
       </mesh>
 
       {/* Caustic shimmer overlay -- additive bright bands clipped to lake shape */}
-      <mesh geometry={lakeGeo} position={[0, WATER_Y + 0.002, 0]}>
-        <meshBasicMaterial
-          ref={causticMatRef}
-          map={causticTexRef.current ?? undefined}
-          transparent
-          opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
+      <mesh geometry={lakeGeo} position={[0, WATER_Y + 0.002, 0]} material={overlays.caustic} />
     </group>
   );
 }
