@@ -302,6 +302,10 @@ export function Sawgrass17Client() {
         {visibleShots.length} shots &middot; {pin} pin
         {showSat && <span style={{ marginLeft: 8, color: "#22d3ee" }}>SAT {satRot}deg</span>}
         {traceMode && <span style={{ marginLeft: 8, color: "#fbbf24" }}>TRACE {traceTarget.toUpperCase()}</span>}
+        <div style={{ marginTop: 4, fontSize: 9, color: "rgba(250,250,250,0.35)", textAlign: "right" }}>
+          Shot data: pgatour.com &middot; THE PLAYERS Championship 2025
+          <br />Personal project &middot; not affiliated with the PGA TOUR
+        </div>
       </div>
 
       {/* hovered shot tooltip */}
