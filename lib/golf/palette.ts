@@ -34,6 +34,8 @@ export const PALETTE = {
   asphaltEdge:  "#3a3a3c",
   timber:       "#6a5340", // bulkhead planks
   timberDark:   "#4a3a2c", // bulkhead shadow / waterline
+  timberTint:   "#8a7663", // multiplies the plank texture -- weathers it down
+                           // (white base read as fresh bright lumber vs refs)
 
   // --- Tournament dressing (props layer) ---
   structure:    "#1c2b4d", // TPC navy
@@ -42,9 +44,10 @@ export const PALETTE = {
   accent:       "#f2c744", // flag yellow
 
   // --- Shoreline planting (spectator side, per the 2026 refs) ---
-  flowerRed:    "#a3313a",
-  flowerRose:   "#b8474f",
-  flowerCoral:  "#c2564a",
+  flowerRed:    "#8e2e36", // muted azalea -- brighter values striped at distance
+  flowerRose:   "#9d3f45",
+  flowerCoral:  "#a64c42",
+  bedFoliage:   "#39552f", // leaf green between bloom masses
   bedMulch:     "#3a2c22",
 
   // --- Vegetation ---

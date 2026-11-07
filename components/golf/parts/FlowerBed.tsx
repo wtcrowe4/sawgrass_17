@@ -68,8 +68,30 @@ export function FlowerBed() {
 
     const pos: number[] = [];
     const col: number[] = [];
-    const tint = new THREE.Color();
-    const tones = [PALETTE.flowerRed, PALETTE.flowerRose, PALETTE.flowerCoral];
+    // Smooth per-INDEX colour, not per-segment: random per-segment tints with
+    // wide value jitter read as candy-cane bands from distance. Clumps span
+    // several segments, foliage green fills between bloom masses, and the
+    // value jitter is small.
+    const red = new THREE.Color(PALETTE.flowerRed);
+    const rose = new THREE.Color(PALETTE.flowerRose);
+    const coral = new THREE.Color(PALETTE.flowerCoral);
+    const leaf = new THREE.Color(PALETTE.bedFoliage);
+    const tintCache = new Map<number, THREE.Color>();
+    const tintAt = (idx: number): THREE.Color => {
+      const hit = tintCache.get(idx);
+      if (hit) return hit;
+      const t = idx * 0.9;
+      const w = Math.sin(t * 0.23) * 0.5 + Math.sin(t * 0.11 + 1.7) * 0.5; // -1..1, slow
+      const c = new THREE.Color();
+      if (w < 0) c.copy(red).lerp(rose, w + 1);
+      else c.copy(rose).lerp(coral, w);
+      // foliage gaps between bloom masses
+      const g = Math.sin(t * 0.31 + 4.1) * 0.5 + 0.5;
+      c.lerp(leaf, 0.15 + 0.45 * g * g);
+      c.multiplyScalar(0.94 + rand(idx) * 0.12);
+      tintCache.set(idx, c);
+      return c;
+    };
 
     for (let i = lo; i < hi; i++) {
       const j = (i + 1) % n;
@@ -91,16 +113,15 @@ export function FlowerBed() {
         [f1.x, yFar, -f1.y],
         [f0.x, yFar, -f0.y],
       ];
-      // one tone per segment, with a little value jitter -- reads as clumps
-      const base = tones[Math.floor(rand(i) * tones.length) % tones.length];
-      tint.set(base);
-      const v = 0.82 + rand(i * 3 + 1) * 0.36;
-      tint.multiplyScalar(v);
+      // colour belongs to the vertex INDEX so neighbouring quads share edge
+      // colours and the band blends instead of striping
+      const quadTint = [tintAt(i), tintAt(j), tintAt(j), tintAt(i)];
 
       for (const [p, q, r] of [[0, 2, 1], [0, 3, 2]]) {
         for (const k of [p, q, r]) {
           pos.push(quad[k][0], quad[k][1], quad[k][2]);
-          col.push(tint.r, tint.g, tint.b);
+          const c = quadTint[k];
+          col.push(c.r, c.g, c.b);
         }
       }
     }

@@ -10,6 +10,7 @@ import {
   offsetPolygon,
 } from "@/lib/golf/geometry";
 import { WATER_Y } from "@/lib/golf/types";
+import { PALETTE } from "@/lib/golf/palette";
 import { SHORE_ARCS } from "@/lib/golf/shore";
 
 // Bulkhead -- timber retaining walls around every land/water boundary.
@@ -236,7 +237,7 @@ export function Bulkhead() {
     <group name="bulkhead">
       <mesh geometry={geo} castShadow receiveShadow>
         <meshStandardMaterial
-          color={maps ? "#ffffff" : TIMBER_COLOR}
+          color={maps ? PALETTE.timberTint : TIMBER_COLOR}
           map={maps?.map ?? undefined}
           normalMap={maps?.normalMap ?? undefined}
           normalScale={new THREE.Vector2(0.8, 0.8)}
