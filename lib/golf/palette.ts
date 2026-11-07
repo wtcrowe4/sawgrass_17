@@ -24,6 +24,8 @@ export const PALETTE = {
   // --- Sky / atmosphere. fog MUST match the horizon or the terrain edge
   //     reads as a hard line against the background. ---
   sky:          "#e0a878",
+  skyMid:       "#c9a88f", // dome mid-band, horizon -> zenith transition
+  skyZenith:    "#7d94ab", // muted golden-hour blue overhead
   fog:          "#dba57e",
 
   // --- Hard surfaces ---

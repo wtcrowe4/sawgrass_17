@@ -10,6 +10,8 @@ import { Green } from "./parts/Green";
 import { Bulkhead } from "./parts/Bulkhead";
 import { Water } from "./parts/Water";
 import { Terrain } from "./parts/Terrain";
+import { SkyDome } from "./parts/SkyDome";
+import { Treeline } from "./parts/Treeline";
 import { TeeAreas } from "./parts/TeeAreas";
 import { CartPath } from "./parts/CartPath";
 import { Pin } from "./parts/Pin";
@@ -161,6 +163,13 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       {/* Golden hour sky -- warm peach haze, fog fades terrain into it */}
       <color attach="background" args={[PALETTE.sky]} />
       <fog attach="fog" args={[PALETTE.fog, 110, 320]} />
+      {/* Gradient dome over the flat background colour; horizon still
+          matches fog so the terrain edge keeps fading cleanly. */}
+      <SkyDome />
+      {/* Distant silhouette treeline -- always on, NOT part of the props
+          toggle. The horizon band and the water's reflection content both
+          come from this. */}
+      <Treeline />
       <Lighting />
       {/* HDR environment -- sunset sky drives warm water reflections.
           Vendored locally: preset="sunset" fetches from a CDN at runtime
