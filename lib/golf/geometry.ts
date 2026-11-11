@@ -310,7 +310,7 @@ export function makeTerrainShape(): THREE.Shape {
 }
 
 // ============================================================
-// GREEN DIMENSIONS (derived -- used by sample-shots.ts)
+// GREEN DIMENSIONS (derived)
 // ============================================================
 const xVals = GREEN_POLY_YDS.map(([x]) => x);
 const yVals = GREEN_POLY_YDS.map(([, y]) => y);
