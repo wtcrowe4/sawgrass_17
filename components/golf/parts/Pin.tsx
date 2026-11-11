@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { PIN_POSITIONS, type PinPosition } from "@/lib/golf/geometry";
+import { greenReliefAt } from "@/lib/golf/elevation";
 
 // ─── Pin (flagstick + flag) ───────────────────────────────────────────────────
 // Flagstick: thin cylinder, 2.5 wu tall (≈ 8.3 ft, standard pin height)
@@ -49,7 +50,7 @@ export function Pin({ pin }: PinProps) {
   });
 
   return (
-    <group name="pin" position={[pinPos.x, 0.05, pinPos.z]}>
+    <group name="pin" position={[pinPos.x, 0.05 + greenReliefAt(pinPos.x, pinPos.z), pinPos.z]}>
       {/* Flagstick */}
       <mesh castShadow position={[0, STICK_HEIGHT / 2, 0]}>
         <cylinderGeometry args={[STICK_R, STICK_R, STICK_HEIGHT, 8]} />

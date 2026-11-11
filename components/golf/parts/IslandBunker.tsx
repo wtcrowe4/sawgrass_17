@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { makeIslandBunkerShape } from "@/lib/golf/geometry";
-import { PALETTE, ROUGHNESS } from "@/lib/golf/palette";
+import { greenReliefAt } from "@/lib/golf/elevation";
+import { ROUGHNESS } from "@/lib/golf/palette";
 
 // IslandBunker -- greenside sand bunker on the island.
 // Radial-gradient texture sells the depression: darker shadowed center,
@@ -65,6 +66,16 @@ export function IslandBunker() {
     }
     g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
     g.rotateX(-Math.PI / 2);
+
+    // Follow the green's relief (front-right runoff dips here) so the sand
+    // sits IN the depression instead of hovering over it. All vertices are
+    // on the outline; the fill interpolates, which is fine at this size.
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      p.setY(i, p.getY(i) + greenReliefAt(p.getX(i), p.getZ(i)));
+    }
+    p.needsUpdate = true;
+    g.computeVertexNormals();
 
     return { geo: g, tex: buildBunkerTexture() };
   }, []);

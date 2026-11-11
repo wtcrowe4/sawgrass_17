@@ -5,6 +5,7 @@ import { useFrame, ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { parabolaPoints } from "@/lib/golf/geometry";
+import { greenReliefAt } from "@/lib/golf/elevation";
 import { OUTCOME_COLOR, Y2W, type Shot } from "@/lib/golf/types";
 
 // Tracers -- animated parabolic arcs from tee to landing for each shot.
@@ -73,7 +74,12 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
   );
 
   const landingW = useMemo(
-    () => new THREE.Vector3(-shot.landing.x * Y2W, 0.06, shot.landing.y * Y2W),
+    // Dots on the contoured green ride the relief (0 off-island).
+    () => {
+      const wx = -shot.landing.x * Y2W;
+      const wz = shot.landing.y * Y2W;
+      return new THREE.Vector3(wx, 0.06 + greenReliefAt(wx, wz), wz);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shot.id]
   );
