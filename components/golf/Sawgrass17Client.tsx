@@ -137,6 +137,7 @@ export function Sawgrass17Client({ embed: embedProp = false }: Sawgrass17ClientP
         onReplayDone={handleReplayDone}
         onSelectShot={handleSelectShot}
         autoRotate={embed}
+        embed={embed}
       />
 
       {/* top-left: hole info */}

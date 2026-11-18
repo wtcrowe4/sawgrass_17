@@ -59,6 +59,9 @@ export interface Sawgrass17Props {
   onSelectShot?: (shot: Shot) => void;
   /** Slow idle orbit (embed mode). Stops the moment the user grabs the view. */
   autoRotate?: boolean;
+  /** Embed framing: orbit target pulled toward the green and tighter zoom
+   *  limits, so narrow portfolio panes keep the island centered. */
+  embed?: boolean;
 }
 
 // --- Camera config ------------------------------------------------------------
@@ -68,6 +71,8 @@ export interface Sawgrass17Props {
 // upper-center. Full tee->green tracer story is visible.
 const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 20, -64);
 const DEFAULT_TARGET = new THREE.Vector3(3.5, 0, -24);
+// Embed panes are tall and narrow; keep the island centered when orbiting.
+const EMBED_TARGET = new THREE.Vector3(3.8, 0, -14);
 const FOV = 42;
 
 const INTRO_DURATION = 3.0;
@@ -165,9 +170,10 @@ interface SceneProps {
   onReplayDone?: () => void;
   onSelectShot?: (shot: Shot) => void;
   autoRotate?: boolean;
+  embed?: boolean;
 }
 
-function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post, replayShot, onReplayDone, onSelectShot, autoRotate }: SceneProps) {
+function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post, replayShot, onReplayDone, onSelectShot, autoRotate, embed }: SceneProps) {
   useCinematicIntro(intro);
   useDebugCamera();
   // Idle orbit runs until the user takes the view; a replay pauses it too.
@@ -268,7 +274,7 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       </EffectComposer>
       )}
       <OrbitControls
-        target={DEFAULT_TARGET}
+        target={embed ? EMBED_TARGET : DEFAULT_TARGET}
         enablePan={false}
         enableDamping
         dampingFactor={0.06}
@@ -277,8 +283,8 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
         onStart={() => setGrabbed(true)}
         minPolarAngle={Math.PI * 0.08}
         maxPolarAngle={Math.PI * 0.52}
-        minDistance={15}
-        maxDistance={150}
+        minDistance={embed ? 12 : 15}
+        maxDistance={embed ? 90 : 150}
         makeDefault
       />
     </>
@@ -303,6 +309,7 @@ export function Sawgrass17({
   onReplayDone,
   onSelectShot,
   autoRotate = false,
+  embed = false,
 }: Sawgrass17Props) {
   return (
     <Canvas
@@ -329,6 +336,7 @@ export function Sawgrass17({
         onReplayDone={onReplayDone}
         onSelectShot={onSelectShot}
         autoRotate={autoRotate}
+        embed={embed}
       />
     </Canvas>
   );
