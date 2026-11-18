@@ -166,6 +166,19 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover, onSelec
       </mesh>
 
       {done && (
+        <>
+        {/* Invisible oversized hit target: the visible dot is too small to
+            click reliably (embed idle-orbit finding, 2026-11-18). three's
+            Raycaster ignores visibility, so this still catches events. */}
+        <mesh
+          position={landingW}
+          visible={false}
+          onPointerOver={handleOver}
+          onPointerOut={handleOut}
+          onClick={handleClick}
+        >
+          <sphereGeometry args={[dotR * 3, 8, 8]} />
+        </mesh>
         <mesh position={landingW} onPointerOver={handleOver} onPointerOut={handleOut} onClick={handleClick} castShadow>
           <sphereGeometry args={[dotR, 10, 10]} />
           <meshStandardMaterial
@@ -177,6 +190,7 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover, onSelec
           />
           <ShotTooltip shot={shot} visible={hovered} />
         </mesh>
+        </>
       )}
     </group>
   );
