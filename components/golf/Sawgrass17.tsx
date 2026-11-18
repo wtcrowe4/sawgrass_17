@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
 import { EffectComposer, Bloom, SMAA, Vignette } from "@react-three/postprocessing";
@@ -27,6 +27,7 @@ import { Grandstands } from "./parts/Grandstands";
 import { StandingCrowds } from "./parts/Crowd";
 import { TracerPlane } from "./parts/TracerPlane";
 import { Hole16 } from "./parts/Hole16";
+import { ReplayRig } from "./parts/ReplayRig";
 
 import { PALETTE } from "@/lib/golf/palette";
 import type { Shot } from "@/lib/golf/types";
@@ -50,6 +51,14 @@ export interface Sawgrass17Props {
   showProps?: boolean;
   /** Postprocessing stack. ?nopost=1 disables for A/B. */
   post?: boolean;
+  /** Shot being replayed with the chase cam, or null. */
+  replayShot?: Shot | null;
+  /** Replay finished (camera is back). */
+  onReplayDone?: () => void;
+  /** Landing dot clicked. */
+  onSelectShot?: (shot: Shot) => void;
+  /** Slow idle orbit (embed mode). Stops the moment the user grabs the view. */
+  autoRotate?: boolean;
 }
 
 // --- Camera config ------------------------------------------------------------
@@ -152,11 +161,17 @@ interface SceneProps {
   splatUrl?: string;
   showProps: boolean;
   post: boolean;
+  replayShot?: Shot | null;
+  onReplayDone?: () => void;
+  onSelectShot?: (shot: Shot) => void;
+  autoRotate?: boolean;
 }
 
-function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post }: SceneProps) {
+function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode, onTracePoint, intro, showSplat, splatUrl, showProps, post, replayShot, onReplayDone, onSelectShot, autoRotate }: SceneProps) {
   useCinematicIntro(intro);
   useDebugCamera();
+  // Idle orbit runs until the user takes the view; a replay pauses it too.
+  const [grabbed, setGrabbed] = useState(false);
 
   return (
     <>
@@ -230,7 +245,10 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
       )}
       <SatelliteOverlay visible={showSatellite ?? false} rotDeg={satRotation ?? 0} />
       <TracerPlane active={traceMode ?? false} onPoint={onTracePoint ?? (() => {})} />
-      <Tracers shots={shots} onHoverShot={onHoverShot} />
+      <Tracers shots={shots} onHoverShot={onHoverShot} onSelectShot={onSelectShot} />
+      {replayShot && (
+        <ReplayRig key={replayShot.id} shot={replayShot} onDone={onReplayDone ?? (() => {})} />
+      )}
       {/* Post -- DEFAULT OFF. Measured 2026-08-01: attaching EffectComposer
           flattens the lake from the reflector's blue depth to dead grey.
           MeshReflectorMaterial runs its own render pass, which the composer's
@@ -254,6 +272,9 @@ function Scene({ shots, pin, onHoverShot, showSatellite, satRotation, traceMode,
         enablePan={false}
         enableDamping
         dampingFactor={0.06}
+        autoRotate={!!autoRotate && !grabbed && !replayShot}
+        autoRotateSpeed={0.45}
+        onStart={() => setGrabbed(true)}
         minPolarAngle={Math.PI * 0.08}
         maxPolarAngle={Math.PI * 0.52}
         minDistance={15}
@@ -278,6 +299,10 @@ export function Sawgrass17({
   splatUrl,
   showProps = false,
   post = false,
+  replayShot = null,
+  onReplayDone,
+  onSelectShot,
+  autoRotate = false,
 }: Sawgrass17Props) {
   return (
     <Canvas
@@ -300,6 +325,10 @@ export function Sawgrass17({
         splatUrl={splatUrl}
         showProps={showProps}
         post={post}
+        replayShot={replayShot}
+        onReplayDone={onReplayDone}
+        onSelectShot={onSelectShot}
+        autoRotate={autoRotate}
       />
     </Canvas>
   );

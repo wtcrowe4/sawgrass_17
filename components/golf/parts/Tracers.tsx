@@ -58,9 +58,10 @@ interface TracerProps {
   stagger: number;
   dotR: number;
   onHover?: (shot: Shot | null) => void;
+  onSelect?: (shot: Shot) => void;
 }
 
-function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: TracerProps) {
+function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover, onSelect }: TracerProps) {
   const ballRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -134,6 +135,11 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
     onHover?.(shot);
   }, [shot, onHover]);
 
+  const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    onSelect?.(shot);
+  }, [shot, onSelect]);
+
   const handleOut = useCallback(() => {
     setHovered(false);
     onHover?.(null);
@@ -160,7 +166,7 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
       </mesh>
 
       {done && (
-        <mesh position={landingW} onPointerOver={handleOver} onPointerOut={handleOut} castShadow>
+        <mesh position={landingW} onPointerOver={handleOver} onPointerOut={handleOut} onClick={handleClick} castShadow>
           <sphereGeometry args={[dotR, 10, 10]} />
           <meshStandardMaterial
             color={color}
@@ -180,9 +186,11 @@ function SingleTracer({ shot, index, globalTime, stagger, dotR, onHover }: Trace
 interface TracersProps {
   shots: Shot[];
   onHoverShot?: (shot: Shot | null) => void;
+  /** Click on a landing dot -- drives the replay chase cam. */
+  onSelectShot?: (shot: Shot) => void;
 }
 
-export function Tracers({ shots, onHoverShot }: TracersProps) {
+export function Tracers({ shots, onHoverShot, onSelectShot }: TracersProps) {
   const timeRef = useRef(0);
   const [globalTime, setGlobalTime] = useState(0);
 
@@ -207,6 +215,7 @@ export function Tracers({ shots, onHoverShot }: TracersProps) {
           stagger={stagger}
           dotR={dotR}
           onHover={onHoverShot}
+          onSelect={onSelectShot}
         />
       ))}
     </group>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Sawgrass17 } from "./Sawgrass17";
 import { REAL_SHOTS_2025 } from "@/data/real-shots-2025";
 import type { Shot } from "@/lib/golf/types";
@@ -41,7 +41,13 @@ type TraceTarget = "lake" | "green";
 // MeshReflectorMaterial and flattens the lake. Flip to true to re-evaluate.
 const POST_FX = false;
 
-export function Sawgrass17Client() {
+interface Sawgrass17ClientProps {
+  /** Portfolio embed: minimal HUD, idle auto-orbit, dot-click replay only.
+   *  ?embed=1 forces it too (for direct links and headless checks). */
+  embed?: boolean;
+}
+
+export function Sawgrass17Client({ embed: embedProp = false }: Sawgrass17ClientProps = {}) {
   const [pin, setPin]                 = useState<PinPosition>("sunday");
   const [hoveredShot, setHoveredShot] = useState<Shot | null>(null);
   const [showSat, setShowSat]         = useState(false);
@@ -59,11 +65,22 @@ export function Sawgrass17Client() {
   // Set in an effect (not during render) to keep SSR/client markup identical.
   const [noIntro, setNoIntro] = useState(false);
   const [noPost, setNoPost] = useState(false);
+  // ?embed=1 -- portfolio embed: minimal HUD (title, legend, attribution),
+  // no editor controls, slow idle orbit until the user grabs the view.
+  // Landing-dot click replay stays live.
+  const [embedParam, setEmbedParam] = useState(false);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     if (q.has("nointro")) setNoIntro(true);
     if (q.has("nopost")) setNoPost(true);
+    if (q.has("embed")) setEmbedParam(true);
   }, []);
+  const embed = embedProp || embedParam;
+
+  const [showStats, setShowStats] = useState(false);
+  const [replayShot, setReplayShot] = useState<Shot | null>(null);
+  const handleSelectShot = useCallback((shot: Shot) => setReplayShot(shot), []);
+  const handleReplayDone = useCallback(() => setReplayShot(null), []);
 
   const handleHover = useCallback((shot: Shot | null) => setHoveredShot(shot), []);
 
@@ -72,6 +89,30 @@ export function Sawgrass17Client() {
   }, []);
 
   const visibleShots = REAL_SHOTS_2025.filter((s) => s.pin === pin);
+
+  // Round stats computed from the real data for the selected pin.
+  const stats = useMemo(() => {
+    const n = visibleShots.length;
+    const outcomes = ["birdie", "par", "bogey", "double+", "water"] as const;
+    const counts = Object.fromEntries(outcomes.map((o) => [o, 0])) as Record<(typeof outcomes)[number], number>;
+    let carrySum = 0;
+    const clubs = new Map<string, number>();
+    for (const s of visibleShots) {
+      counts[s.outcome] += 1;
+      carrySum += s.carryYds;
+      if (s.club) clubs.set(s.club, (clubs.get(s.club) ?? 0) + 1);
+    }
+    const topClubs = [...clubs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return {
+      n,
+      counts,
+      avgCarry: n ? carrySum / n : 0,
+      birdiePct: n ? (100 * counts.birdie) / n : 0,
+      waterPct: n ? (100 * counts.water) / n : 0,
+      topClubs,
+      maxCount: Math.max(1, ...outcomes.map((o) => counts[o])),
+    };
+  }, [visibleShots]);
 
   const polyLines = points
     .map(([x, z]) => traceTarget === "lake" ? toLakePoly(x, z) : toGreenPoly(x, z))
@@ -92,6 +133,10 @@ export function Sawgrass17Client() {
         splatUrl={splatUrl}
         showProps={showProps}
         post={!noPost && POST_FX}
+        replayShot={replayShot}
+        onReplayDone={handleReplayDone}
+        onSelectShot={handleSelectShot}
+        autoRotate={embed}
       />
 
       {/* top-left: hole info */}
@@ -106,7 +151,8 @@ export function Sawgrass17Client() {
         </div>
       </div>
 
-      {/* top-right controls */}
+      {/* top-right controls -- hidden entirely in embed mode */}
+      {!embed && (
       <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10, display: "flex", gap: 6, alignItems: "center" }}>
         {/* SAT toggle */}
         <button
@@ -189,6 +235,35 @@ export function Sawgrass17Client() {
           />
         )}
 
+        {/* REPLAY -- chase-cam replay of a random shot; click a landing dot
+            to replay that exact shot instead. Click again to cancel. */}
+        <button
+          onClick={() => {
+            if (replayShot) setReplayShot(null);
+            else if (visibleShots.length > 0)
+              setReplayShot(visibleShots[Math.floor(Math.random() * visibleShots.length)]);
+          }}
+          style={{
+            background: replayShot ? "rgba(251,146,60,0.18)" : "rgba(10,10,10,0.75)",
+            border: `1px solid ${replayShot ? "#fb923c" : "rgba(255,255,255,0.15)"}`,
+            borderRadius: 6, color: replayShot ? "#fb923c" : "rgba(250,250,250,0.5)",
+            fontFamily: "ui-monospace, monospace", fontSize: 11,
+            padding: "5px 10px", cursor: "pointer", letterSpacing: "0.06em",
+          }}
+        >REPLAY</button>
+
+        {/* STATS panel toggle */}
+        <button
+          onClick={() => setShowStats((v) => !v)}
+          style={{
+            background: showStats ? "rgba(96,165,250,0.15)" : "rgba(10,10,10,0.75)",
+            border: `1px solid ${showStats ? "#60a5fa" : "rgba(255,255,255,0.15)"}`,
+            borderRadius: 6, color: showStats ? "#60a5fa" : "rgba(250,250,250,0.5)",
+            fontFamily: "ui-monospace, monospace", fontSize: 11,
+            padding: "5px 10px", cursor: "pointer", letterSpacing: "0.06em",
+          }}
+        >STATS</button>
+
         <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.1)" }} />
 
         {PIN_OPTIONS.map((p) => (
@@ -214,6 +289,44 @@ export function Sawgrass17Client() {
           </button>
         ))}
       </div>
+      )}
+
+      {/* stats panel -- bottom-left, above the legend */}
+      {showStats && !traceMode && !embed && (
+        <div style={{
+          position: "absolute", bottom: 52, left: 16, zIndex: 15,
+          ...HUD_CARD, border: "1px solid rgba(96,165,250,0.3)",
+          padding: "10px 12px", width: 236,
+        }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.08em", color: "#60a5fa", fontWeight: 700, marginBottom: 7 }}>
+            {pin.toUpperCase()} PIN &middot; {stats.n} TEE SHOTS
+          </div>
+          {(["birdie", "par", "bogey", "double+", "water"] as const).map((o) => (
+            <div key={o} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+              <span style={{ width: 46, fontSize: 9, fontFamily: "ui-monospace, monospace", color: "rgba(250,250,250,0.6)", textTransform: "uppercase" }}>
+                {o}
+              </span>
+              <div style={{ flex: 1, height: 7, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{
+                  width: `${(100 * stats.counts[o]) / stats.maxCount}%`,
+                  height: "100%", background: OUTCOME_COLOR[o], borderRadius: 3,
+                }} />
+              </div>
+              <span style={{ width: 26, textAlign: "right", fontSize: 9, fontFamily: "ui-monospace, monospace", color: "rgba(250,250,250,0.7)" }}>
+                {stats.counts[o]}
+              </span>
+            </div>
+          ))}
+          <div style={{ marginTop: 7, fontSize: 9, fontFamily: "ui-monospace, monospace", color: "rgba(250,250,250,0.5)", lineHeight: 1.7 }}>
+            birdie {stats.birdiePct.toFixed(0)}% &middot; water {stats.waterPct.toFixed(0)}% &middot; avg carry {stats.avgCarry.toFixed(0)} yds
+            {stats.topClubs.length > 0 && (
+              <>
+                <br />clubs: {stats.topClubs.map(([c, k]) => `${c} (${k})`).join(", ")}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* trace panel -- bottom-left when active */}
       {traceMode && (
